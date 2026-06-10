@@ -12,12 +12,16 @@ export async function submitForm(data: FormData): Promise<void> {
   const endpoint = import.meta.env.VITE_GAS_ENDPOINT;
   if (!endpoint) throw new Error('送信先が設定されていません');
 
-  // GAS Web App は302リダイレクト後にopaque responseを返すため no-cors が必要。
-  // opaque responseはステータスが読めないので、fetch自体が例外を投げなければ成功扱い。
-  await fetch(endpoint, {
-    method: 'POST',
-    mode: 'no-cors',
-    headers: { 'Content-Type': 'text/plain' },
-    body: JSON.stringify(data),
+  // GASは302リダイレクトでPOST→GETに変換されるため、最初からGETで送る。
+  // no-corsのopaque responseはステータス不明なのでfetch完了をもって成功とする。
+  const params = new URLSearchParams({
+    name:        data.name,
+    classOf:     data.classOf,
+    party1:      data.party1,
+    party2:      data.party2,
+    commentName: data.commentName,
+    now:         data.now,
+    memory:      data.memory,
   });
+  await fetch(`${endpoint}?${params}`, { mode: 'no-cors' });
 }

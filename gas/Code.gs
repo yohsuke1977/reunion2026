@@ -1,14 +1,12 @@
 // Google Apps Script — フォーム受信→スプレッドシート書き込み
-// デプロイ方法: 拡張機能 > Apps Script > デプロイ > 新しいデプロイ
-//   種類: ウェブアプリ / 実行ユーザー: 自分 / アクセス: 全員
-// デプロイ後のURLを VITE_GAS_ENDPOINT に設定する
+// ブラウザからのfetchはGASの302リダイレクトでPOST→GETに変わるため doGet で受け取る
 
 var SHEET_ID = 'YOUR_SPREADSHEET_ID'; // ← スプレッドシートIDに変更
 var SHEET_NAME = '出欠登録';
 
-function doPost(e) {
+function doGet(e) {
   try {
-    var data = JSON.parse(e.postData.contents);
+    var p = e.parameter;
     var ss = SpreadsheetApp.openById(SHEET_ID);
     var sheet = ss.getSheetByName(SHEET_NAME);
 
@@ -19,13 +17,13 @@ function doPost(e) {
 
     sheet.appendRow([
       new Date(),
-      data.name || '',
-      data.classOf || '',
-      data.party1 || '',
-      data.party2 || '',
-      data.commentName || '',
-      data.now || '',
-      data.memory || ''
+      p.name        || '',
+      p.classOf     || '',
+      p.party1      || '',
+      p.party2      || '',
+      p.commentName || '',
+      p.now         || '',
+      p.memory      || ''
     ]);
 
     return ContentService
