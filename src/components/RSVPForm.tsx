@@ -132,10 +132,7 @@ export default function RSVPForm() {
           />
         </div>
 
-        <p className="note">
-          ※ いただいたコメントは、当日の会場やこのページで<br />
-          ニックネーム / 匿名にて紹介させていただく場合があります。
-        </p>
+        <p className="note">※ いただいたコメントは、当日の会場やこのページでニックネーム / 匿名にて紹介させていただく場合があります。</p>
       </div>
 
       {error && <p className="error-msg">{error}</p>}
