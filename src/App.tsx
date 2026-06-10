@@ -6,6 +6,7 @@ import SectionHeader from './components/SectionHeader';
 import Details from './components/Details';
 import RSVPForm from './components/RSVPForm';
 import Voices from './components/Voices';
+import ShareSection from './components/ShareSection';
 import LineBand from './components/LineBand';
 import Footer from './components/Footer';
 
@@ -21,6 +22,7 @@ export default function App() {
       <RSVPForm />
       <SectionHeader no="03" title="みんなの近況" en="VOICES" />
       <Voices />
+      <ShareSection />
       <LineBand />
       <Footer />
     </div>

@@ -38,12 +38,17 @@ export default function RSVPForm() {
       <div className="thanks">
         <div className="big">ありがとうございます</div>
         <p>ご登録ありがとうございました。<br />当日お会いできるのを楽しみにしています。</p>
+        <p className="thanks-resend">出欠の変更やコメントの追加は、<br />何度でも再送信できます。</p>
       </div>
     );
   }
 
   return (
     <section className="form-wrap">
+      <div className="deadline-band">
+        <span className="deadline-label">一次締め切り</span>
+        <span className="deadline-date">7月31日（金）</span>
+      </div>
       <div className="formcard">
         <div className="fmhd">
           <span className="fmno">①</span>出欠の登録
@@ -135,6 +140,9 @@ export default function RSVPForm() {
       <button className="submit" onClick={handleSubmit} disabled={loading}>
         {loading ? '送信中…' : '送 信 す る'}
       </button>
+      <p className="note" style={{ marginTop: '12px' }}>
+        ※ 出欠の変更やコメントの追加は、何度でも再送信できます。
+      </p>
     </section>
   );
 }
