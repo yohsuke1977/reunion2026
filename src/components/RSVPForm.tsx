@@ -38,7 +38,10 @@ export default function RSVPForm() {
       <div className="thanks">
         <div className="big">ありがとうございます</div>
         <p>ご登録ありがとうございました。<br />当日お会いできるのを楽しみにしています。</p>
-        <p className="thanks-resend">出欠の変更やコメントの追加は、<br />何度でも再送信できます。</p>
+        <p className="thanks-resend">出欠の変更やコメントの追加は何度でも送れます。</p>
+        <button className="submit" style={{ marginTop: '20px' }} onClick={() => setDone(false)}>
+          もう一度送信する
+        </button>
       </div>
     );
   }
