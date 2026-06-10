@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm create *)",
+      "Bash(echo \"exit: $?\")",
+      "Bash(npx create-vite@latest /tmp/reunion2026-tmp --template react-ts)",
+      "Read(//tmp/**)",
+      "Bash(cp -r /Users/Yohsuke/Desktop/claude/reunion2026/tmp/reunion2026-tmp/* /Users/Yohsuke/Desktop/claude/reunion2026/tmp/reunion2026-tmp/.* /Users/Yohsuke/Desktop/claude/reunion2026/)",
+      "Bash(rm -rf /Users/Yohsuke/Desktop/claude/reunion2026/tmp)",
+      "Bash(npm install *)",
+      "Bash(npm run *)",
+      "Bash(curl -s http://localhost:5174/)",
+      "Bash(curl -s http://localhost:5176/)",
+      "Bash(pkill -f \"vite --port 5174\")",
+      "Bash(pkill -f \"vite.*reunion2026\")",
+      "Bash(git init *)",
+      "Bash(git add *)"
+    ]
+  }
+}
