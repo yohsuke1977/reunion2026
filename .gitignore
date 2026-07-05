@@ -22,3 +22,12 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+.vercel
+
+# 環境変数（秘密情報）
+.env
+.env.local
+.env.*.local
+
+# Claude ローカル設定（マシン固有・共有しない）
+.claude/settings.local.json
