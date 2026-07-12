@@ -1,4 +1,39 @@
+import { useEffect, useState } from 'react';
+import { fetchComments, type Comment } from '../lib/submitForm';
+
 export default function Voices() {
+  const [comments, setComments] = useState<Comment[] | null>(null);
+
+  useEffect(() => {
+    let alive = true;
+    fetchComments()
+      .then((list) => { if (alive) setComments(list); })
+      .catch(() => { if (alive) setComments([]); });
+    return () => { alive = false; };
+  }, []);
+
+  // コメントが1件以上あれば縦スクロールで表示、無ければ「近日公開」表示
+  if (comments && comments.length > 0) {
+    // -50%スクロールでシームレスにループさせるため、同じ列を2周ぶん並べる
+    const loop = [...comments, ...comments];
+    return (
+      <section className="voices">
+        <div className="voices-viewport">
+          <div className="voices-track">
+            {loop.map((c, i) => (
+              <article className="vcard" key={i} aria-hidden={i >= comments.length}>
+                <div className="vname">{c.name}</div>
+                {c.now && <p className="vnow">{c.now}</p>}
+                {c.memory && <p className="vmemory">{c.memory}</p>}
+              </article>
+            ))}
+          </div>
+        </div>
+        <p className="snote">※ 上の「② コメントを投稿」からお寄せいただけます。</p>
+      </section>
+    );
+  }
+
   return (
     <section className="soon">
       <span className="badge">近 日 公 開 予 定</span>
