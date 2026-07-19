@@ -176,76 +176,69 @@ function syncLedger() {
   var ss = SpreadsheetApp.openById(SHEET_ID);
   var ledger = ss.getSheetByName(LEDGER_NAME);
   var form = ss.getSheetByName(SHEET_NAME);
-  if (!ledger || !form) return 0;
-
-  // 出欠登録: タイムスタンプ, お名前, クラス, 一次会, 二次会, コメント名, 近況, 思い出
-  // 「氏名（旧姓◯◯）」のような表記に備え、複数のキーで索引する。
-  var fvals = form.getDataRange().getValues();
-  var latest = {};             // 照合キー → 最新回答
-  var respondents = {};        // 回答者（重複排除）→ {raw, keys}
-  for (var i = 1; i < fvals.length; i++) {
-    var keys = formKeys_(fvals[i][1]);
-    if (!keys.length) continue;
-    var rec = { // 同名の再送信は後の行（新しい回答）で上書き
-      ts: fvals[i][0], party1: fvals[i][3], party2: fvals[i][4],
-      cname: fvals[i][5], now: fvals[i][6], memory: fvals[i][7]
-    };
-    for (var kk = 0; kk < keys.length; kk++) latest[keys[kk]] = rec;
-    respondents[keys[0]] = { raw: String(fvals[i][1] || '').trim(), keys: keys };
-  }
+  if (!ledger || !form) return { updates: 0, unmatched: [] };
 
   var last = ledger.getLastRow();
-  if (last < 2) return 0;
+  if (last < 2) return { updates: 0, unmatched: [] };
   var n = last - 1;
   var names = ledger.getRange(2, 3, n, 2).getValues(); // C:D 氏名・旧姓
-  var block = ledger.getRange(2, 7, n, 5).getValues();  // G:K 出欠・二次会・回答日時・経路・備考
 
-  var ledgerKeys = {};         // 台帳側の氏名・旧姓キー集合（未照合判定用）
-  var updates = 0;
+  // 台帳キー → 行index（0始まり）。氏名・旧姓・旧姓フルネームを索引。先勝ち。
+  var keyToRow = {};
   for (var r = 0; r < n; r++) {
-    var kName = normName_(names[r][0]);         // 現姓フルネーム
-    var kOld  = normName_(names[r][1]);         // 旧姓（多くは姓のみ）
-    // 旧姓フルネーム候補 ＝ 旧姓 ＋ 氏名の「名」部分（例: 本城 洋子/旧姓松岡 → 松岡洋子）
+    var kName = normName_(names[r][0]);                 // 現姓フルネーム
+    var kOld  = normName_(names[r][1]);                 // 旧姓（多くは姓のみ）
+    // 旧姓フルネーム ＝ 旧姓 ＋ 氏名の「名」部分（例: 本城 洋子/旧姓松岡 → 松岡洋子）
     var kMaiden = '';
     if (names[r][1]) {
       var parts = String(names[r][0]).split(/[\s　]+/).filter(String);
       var given = parts.length > 1 ? parts[parts.length - 1] : '';
       if (given) kMaiden = normName_(names[r][1] + given);
     }
-    if (kName)   ledgerKeys[kName]   = 1;
-    if (kOld)    ledgerKeys[kOld]    = 1;
-    if (kMaiden) ledgerKeys[kMaiden] = 1;
+    [kName, kMaiden, kOld].forEach(function (k) {
+      if (k && !(k in keyToRow)) keyToRow[k] = r;
+    });
+  }
 
-    var hit = latest[kName] || (kMaiden ? latest[kMaiden] : null) || (kOld ? latest[kOld] : null);
-    if (!hit) continue;
+  // 出欠登録: タイムスタンプ, お名前, クラス, 一次会, 二次会, コメント名, 近況, 思い出
+  var block = ledger.getRange(2, 7, n, 5).getValues();  // G:K
+  var fvals = form.getDataRange().getValues();
+  var updates = 0;
+  var unmatched = [];
+  for (var i = 1; i < fvals.length; i++) {
+    var raw = String(fvals[i][1] || '').trim();
+    if (!raw) continue;                                  // 無名（空送信）はスキップ
 
-    block[r][0] = mark_(hit.party1);   // 出欠
-    block[r][1] = mark_(hit.party2);   // 二次会
-    block[r][2] = hit.ts;              // 回答日時
-    block[r][3] = 'Web';               // 経路
+    // お名前の表記ゆれから照合候補を生成し、最初に台帳と一致したものを採用
+    var cands = matchCandidates_(raw);
+    var row = -1;
+    for (var c = 0; c < cands.length; c++) {
+      if (cands[c] in keyToRow) { row = keyToRow[cands[c]]; break; }
+    }
+    if (row < 0) { unmatched.push(raw); continue; }
+
+    // フォームは時系列昇順なので、同一人物の再送信は後勝ち（＝最新回答）で上書き
+    block[row][0] = mark_(fvals[i][3]);   // 出欠
+    block[row][1] = mark_(fvals[i][4]);   // 二次会
+    block[row][2] = fvals[i][0];          // 回答日時
+    block[row][3] = 'Web';                // 経路
     var note = [
-      hit.cname ? '表示名:' + hit.cname : '',
-      String(hit.now || '').trim(),
-      String(hit.memory || '').trim()
+      fvals[i][5] ? '表示名:' + fvals[i][5] : '',
+      String(fvals[i][6] || '').trim(),
+      String(fvals[i][7] || '').trim()
     ].filter(String).join(' / ');
-    if (note) block[r][4] = note;      // 備考
+    if (note) block[row][4] = note;       // 備考
     updates++;
   }
   ledger.getRange(2, 7, n, 5).setValues(block);
 
-  // 名簿に見つからなかった回答者（旧姓が違う・新規参加など）を洗い出す
-  var unmatched = [];
-  for (var full in respondents) {
-    var rp = respondents[full];
-    var ok = false;
-    for (var j = 0; j < rp.keys.length; j++) { if (ledgerKeys[rp.keys[j]]) { ok = true; break; } }
-    if (!ok) unmatched.push(rp.raw);
+  var msg = 'Web回答を台帳に反映：' + updates + '件';
+  if (unmatched.length) {
+    msg += '\n名簿と一致しなかった回答（要手動確認）: ' + unmatched.length + '件\n' + unmatched.join('、');
   }
-
-  var msg = 'Web回答 ' + updates + '件を台帳に反映しました。';
-  if (unmatched.length) msg += '\n名簿に未照合: ' + unmatched.length + '件（' + unmatched.join('、') + '）';
-  try { ss.toast(msg, '出欠台帳の更新', 8); } catch (e) {}
-  return updates;
+  try { ss.toast(msg, '出欠台帳の更新', 12); } catch (e) {}
+  Logger.log(msg);
+  return { updates: updates, unmatched: unmatched };
 }
 
 // --- ヘルパー ----------------------------------------------------------
@@ -277,18 +270,39 @@ function normName_(s) {
   return String(s).replace(/[\s　]/g, '').trim();
 }
 
-// フォームのお名前欄から照合キー候補を作る。
-// 「森下 ひとみ（旧姓 辰井）」→ ['森下ひとみ（旧姓辰井）', '森下ひとみ', '辰井']
-function formKeys_(raw) {
+// フォームのお名前欄から照合候補キーを生成する。
+// 旧姓・スラッシュ・「現姓（旧姓◯◯）」「A/B」などの表記ゆれに対応。
+// 例:「阪口悠子/旧姓齊藤」→ …,'阪口悠子','齊藤悠子','齊藤',…（台帳が齊藤悠子なら一致）
+//   「畑千咲 井内千咲」→ '畑千咲','井内千咲',…（各トークンを氏名候補に）
+//   「柿内裕香(旧姓 毛利)」→ …,'毛利裕香',…（旧姓＋名で復元）
+function matchCandidates_(raw) {
   raw = String(raw || '');
-  var keys = [];
-  function add(k) { if (k && keys.indexOf(k) === -1) keys.push(k); }
+  var out = [];
+  function add(k) { k = normName_(k); if (k && out.indexOf(k) === -1) out.push(k); }
 
-  add(normName_(raw));                                   // 丸ごと
-  add(normName_(raw.replace(/[（(].*?[）)]/g, '')));      // 括弧内を除いた本体
-  var m = raw.match(/旧姓[\s　]*([^）)\s　]+)/);           // 「旧姓 X」の X
-  if (m) add(normName_(m[1]));
-  return keys;
+  add(raw);                                              // 生（正規化）
+
+  // 「旧姓 X」「旧姓/X」「旧姓：X」の X（姓）を抽出
+  var m = raw.match(/旧姓[\s　:：\/／]*([^）)\/／\s　]+)/);
+  var oldSurname = m ? m[1] : '';
+
+  // 括弧内・「旧姓…」の語を除いた本体を、スラッシュ／スペースで分割
+  var base = raw.replace(/[（(].*?[）)]/g, '')
+                .replace(/旧姓[\s　:：\/／]*[^\/／\s　]+/g, '');
+  var tokens = base.split(/[\/／\s　]+/).map(function (s) { return s.trim(); }).filter(Boolean);
+  tokens.forEach(add);                                   // 各トークンを氏名候補に
+  add(base);                                             // 分割前の本体も
+
+  // 旧姓 ＋ 名 で旧姓フルネームを復元（台帳が旧姓名で登録されているケース）
+  if (oldSurname) {
+    add(oldSurname);
+    // スペース区切りの各トークンを「名」とみなす（例: 柿内 裕香 → 毛利＋裕香）
+    tokens.forEach(function (t) { add(oldSurname + normName_(t)); });
+    // 姓名が続き書きの場合、姓を1〜3文字外した末尾を「名」とみなす（例: 阪口悠子 → 齊藤＋悠子）
+    var core = normName_(base).replace(/[\/／]/g, '');
+    for (var s = 1; s <= 3; s++) { if (core.length > s) add(oldSurname + core.slice(s)); }
+  }
+  return out;
 }
 
 // 出席/欠席/未定 → ○/✗/△
