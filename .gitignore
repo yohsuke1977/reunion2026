@@ -31,3 +31,7 @@ dist-ssr
 
 # Claude ローカル設定（マシン固有・共有しない）
 .claude/settings.local.json
+
+# clasp（GASデプロイ用・ローカル専用）
+.clasp.json
+gas/.build/
