@@ -22,6 +22,12 @@ function doGet(e) {
     return countRsvp();
   }
 
+  // action=sync → フォーム回答を台帳へ手動同期（結果は件数のみ返す・名前は返さない）
+  if (p.action === 'sync') {
+    var r = syncLedger();
+    return json({ status: 'ok', updates: r.updates, unmatched: r.unmatched.length });
+  }
+
   return saveEntry(p);
 }
 
@@ -218,21 +224,22 @@ function syncLedger() {
   var last = ledger.getLastRow();
   if (last < 2) return { updates: 0, unmatched: [] };
   var n = last - 1;
-  var names = ledger.getRange(2, 3, n, 2).getValues(); // C:D 氏名・旧姓
+  var names = ledger.getRange(2, 2, n, 3).getValues(); // B:D フリガナ・氏名・旧姓
 
-  // 台帳キー → 行index（0始まり）。氏名・旧姓・旧姓フルネームを索引。先勝ち。
+  // 台帳キー → 行index（0始まり）。氏名・旧姓・旧姓フルネーム・フリガナを索引。先勝ち。
   var keyToRow = {};
   for (var r = 0; r < n; r++) {
-    var kName = normName_(names[r][0]);                 // 現姓フルネーム
-    var kOld  = normName_(names[r][1]);                 // 旧姓（多くは姓のみ）
+    var kName = normName_(names[r][1]);                 // 現姓フルネーム
     // 旧姓フルネーム ＝ 旧姓 ＋ 氏名の「名」部分（例: 本城 洋子/旧姓松岡 → 松岡洋子）
     var kMaiden = '';
-    if (names[r][1]) {
-      var parts = String(names[r][0]).split(/[\s　]+/).filter(String);
+    if (names[r][2]) {
+      var parts = String(names[r][1]).split(/[\s　]+/).filter(String);
       var given = parts.length > 1 ? parts[parts.length - 1] : '';
-      if (given) kMaiden = normName_(names[r][1] + given);
+      if (given) kMaiden = normName_(names[r][2] + given);
     }
-    [kName, kMaiden, kOld].forEach(function (k) {
+    var kKana = kanaKey_(names[r][0]);                  // フリガナ（半角カナ→全角カナ）
+    // 注: 旧姓「姓のみ」は同姓の別人に誤爆しうるためキーにしない（フルネーム復元のみ）
+    [kName, kMaiden, kKana].forEach(function (k) {
       if (k && !(k in keyToRow)) keyToRow[k] = r;
     });
   }
@@ -301,10 +308,52 @@ function readLedgerInputs_(sheet) {
   return map;
 }
 
-// 氏名を照合用に正規化（全角・半角スペース除去）
+// 氏名を照合用に正規化（全角・半角スペース除去＋旧字体→新字体）
 function normName_(s) {
   if (!s) return '';
-  return String(s).replace(/[\s　]/g, '').trim();
+  return normKanji_(String(s).replace(/[\s　]/g, '').trim());
+}
+
+// 旧字体→新字体の正規化（偶数位置=旧字体、次の文字=新字体のペア列）
+// 名簿・回答の双方に適用するので「三好將介」↔「三好将介」等が一致する
+var KYU_SHIN_ = '將将壽寿齊斉齋斎邊辺邉辺澤沢濱浜髙高﨑崎嶋島嶌島國国廣広惠恵榮栄眞真淺浅瀨瀬龍竜瀧滝豐豊圓円關関與与萬万內内德徳櫻桜靜静縣県稻稲綠緑應応澁渋鹽塩爲為';
+function normKanji_(s) {
+  var out = '';
+  for (var i = 0; i < s.length; i++) {
+    var idx = KYU_SHIN_.indexOf(s.charAt(i));
+    out += (idx !== -1 && idx % 2 === 0) ? KYU_SHIN_.charAt(idx + 1) : s.charAt(i);
+  }
+  return out;
+}
+
+// カナ照合キー: 半角カナ→全角カナ・ひらがな→カタカナに揃え、
+// 純カタカナ文字列になった場合のみキーとして返す（漢字混在は '' ）
+var HW_KANA_ = 'ｦｧｨｩｪｫｬｭｮｯｰｱｲｳｴｵｶｷｸｹｺｻｼｽｾｿﾀﾁﾂﾃﾄﾅﾆﾇﾈﾉﾊﾋﾌﾍﾎﾏﾐﾑﾒﾓﾔﾕﾖﾗﾘﾙﾚﾛﾜﾝ';
+var FW_KANA_ = 'ヲァィゥェォャュョッーアイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワン';
+function toKatakana_(s) {
+  var out = '';
+  for (var i = 0; i < s.length; i++) {
+    var c = s.charAt(i), next = s.charAt(i + 1), code = s.charCodeAt(i);
+    if (next === 'ﾞ' || next === 'ﾟ') {          // 半角の濁点・半濁点を合成
+      if (c === 'ｳ' && next === 'ﾞ') { out += 'ヴ'; i++; continue; }
+      var b = HW_KANA_.indexOf(c);
+      if (b !== -1) {
+        out += String.fromCharCode(FW_KANA_.charCodeAt(b) + (next === 'ﾞ' ? 1 : 2));
+        i++; continue;
+      }
+    }
+    var idx = HW_KANA_.indexOf(c);
+    if (idx !== -1) { out += FW_KANA_.charAt(idx); continue; }
+    if (code >= 0x3041 && code <= 0x3096) {      // ひらがな→カタカナ
+      out += String.fromCharCode(code + 0x60); continue;
+    }
+    out += c;
+  }
+  return out;
+}
+function kanaKey_(s) {
+  var k = toKatakana_(String(s || '').replace(/[\s　]/g, ''));
+  return /^[ァ-ヶー]+$/.test(k) ? k : '';
 }
 
 // 集計の名寄せ用キー。括弧注記（旧姓◯◯）やスペース差、スラッシュ別名で
@@ -338,14 +387,18 @@ function matchCandidates_(raw) {
   add(base);                                             // 分割前の本体も
 
   // 旧姓 ＋ 名 で旧姓フルネームを復元（台帳が旧姓名で登録されているケース）
+  // 注: 旧姓「姓のみ」は候補にしない（同姓の別人への誤爆防止・フルネーム復元のみ）
   if (oldSurname) {
-    add(oldSurname);
     // スペース区切りの各トークンを「名」とみなす（例: 柿内 裕香 → 毛利＋裕香）
     tokens.forEach(function (t) { add(oldSurname + normName_(t)); });
     // 姓名が続き書きの場合、姓を1〜3文字外した末尾を「名」とみなす（例: 阪口悠子 → 齊藤＋悠子）
     var core = normName_(base).replace(/[\/／]/g, '');
     for (var s = 1; s <= 3; s++) { if (core.length > s) add(oldSurname + core.slice(s)); }
   }
+
+  // カナ回答（カガワタツヤ・おだがき あきら 等）→ 台帳フリガナとの照合キー
+  var kana = kanaKey_(raw.replace(/[（(].*?[）)]/g, ''));
+  if (kana && out.indexOf(kana) === -1) out.push(kana);
   return out;
 }
 
