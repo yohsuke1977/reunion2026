@@ -1,10 +1,15 @@
 import { useEffect, useState } from 'react';
 import { fetchComments, type Comment } from '../lib/submitForm';
 
+// コメントの一般公開スイッチ。true にすると「みんなの近況」に投稿を縦スクロール表示する。
+// 十分に集まってから公開する運用のため、当面は false（Coming Soon 表示）のまま。
+const COMMENTS_PUBLIC = false;
+
 export default function Voices() {
   const [comments, setComments] = useState<Comment[] | null>(null);
 
   useEffect(() => {
+    if (!COMMENTS_PUBLIC) return;
     let alive = true;
     fetchComments()
       .then((list) => { if (alive) setComments(list); })
@@ -13,7 +18,7 @@ export default function Voices() {
   }, []);
 
   // コメントが1件以上あれば縦スクロールで表示、無ければ「近日公開」表示
-  if (comments && comments.length > 0) {
+  if (COMMENTS_PUBLIC && comments && comments.length > 0) {
     // -50%スクロールでシームレスにループさせるため、同じ列を2周ぶん並べる
     const loop = [...comments, ...comments];
     return (

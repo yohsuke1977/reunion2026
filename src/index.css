@@ -48,6 +48,86 @@ section { position: relative; }
 .masthead .l { font-size: 17px; letter-spacing: .16em; }
 .masthead .r { font-size: 15px; letter-spacing: .2em; opacity: .85; }
 
+/* DEADLINE BANNER */
+.dlbanner {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 11px;
+  background: var(--verm);
+  color: var(--paper);
+  padding: 14px 20px 16px;
+  text-decoration: none;
+  border-bottom: 3px solid var(--verm-d);
+}
+.dl-row { display: flex; align-items: baseline; justify-content: center; flex-wrap: wrap; gap: 6px 12px; }
+.dl-tag {
+  font-family: var(--gothic);
+  font-weight: 700;
+  font-size: 16px;
+  letter-spacing: .1em;
+  background: var(--paper);
+  color: var(--verm-d);
+  padding: 3px 11px;
+  border-radius: 3px;
+  white-space: nowrap;
+}
+.dl-date { font-family: var(--display); font-weight: 900; font-size: 25px; letter-spacing: .02em; }
+.dl-date small { font-size: 16px; font-weight: 700; }
+.dl-days { font-family: var(--gothic); font-weight: 700; font-size: 17px; }
+.dl-days b { font-family: var(--display); font-size: 26px; margin: 0 3px; }
+.dl-today { animation: dlflash 1s ease-in-out infinite; }
+@keyframes dlflash { 50% { opacity: .45; } }
+.dl-cta {
+  text-align: center;
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 19px;
+  letter-spacing: .06em;
+  color: var(--verm-d);
+  background: var(--paper);
+  padding: 12px 0;
+  border-radius: 5px;
+}
+
+/* ATTENDANCE COUNTS */
+.counts { padding: 10px 24px 2px; }
+.counts-lead {
+  font-family: var(--display);
+  font-weight: 900;
+  font-size: 21px;
+  color: var(--navy);
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 13px;
+}
+.counts-live {
+  font-family: var(--gothic);
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: .12em;
+  color: #fff;
+  background: var(--verm);
+  padding: 2px 9px;
+  border-radius: 11px;
+}
+.counts-grid { display: flex; gap: 10px; }
+.cnt {
+  flex: 1;
+  text-align: center;
+  border: 2px solid;
+  padding: 13px 4px 11px;
+  background: rgba(255, 255, 255, .4);
+}
+.cnt b { display: block; font-family: var(--display); font-weight: 900; font-size: 36px; line-height: 1; }
+.cnt span { display: block; font-family: var(--gothic); font-weight: 700; font-size: 16px; margin-top: 7px; }
+.cnt-attend { border-color: var(--verm); color: var(--verm-d); }
+.cnt-undecided { border-color: var(--navy); color: var(--navy); }
+.cnt-absent { border-color: rgba(92, 102, 112, .6); color: var(--sub); }
+.counts-note { font-family: var(--gothic); font-size: 16px; color: var(--sub); text-align: center; margin-top: 13px; }
+.counts-note b { color: var(--verm-d); font-size: 18px; }
+
 /* HERO */
 .hero { padding: 34px 24px 0; }
 .hero .ey {

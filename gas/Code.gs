@@ -17,7 +17,44 @@ function doGet(e) {
     return listComments();
   }
 
+  // action=counts → 出欠の集計をJSONで返す（サイトの「現在の出欠状況」用）
+  if (p.action === 'counts') {
+    return countRsvp();
+  }
+
   return saveEntry(p);
+}
+
+// --- 出欠の集計（フォーム生回答ベース）---------------------------------
+// 出欠登録シートを氏名で名寄せ（最新回答を採用）して、一次会の出席/欠席/未定を数える。
+// 台帳の照合有無に関係なく、回答した人は全員カウントされる。
+function countRsvp() {
+  try {
+    var ss = SpreadsheetApp.openById(SHEET_ID);
+    var sheet = ss.getSheetByName(SHEET_NAME);
+    if (!sheet) return json({ status: 'ok', attend: 0, absent: 0, undecided: 0, responded: 0 });
+
+    // 出欠登録: タイムスタンプ, お名前, クラス, 一次会, 二次会, ...
+    // 「何度でも送信OK」なので重複回答が来る。氏名で名寄せし、後の行（新しい回答）を採用。
+    var vals = sheet.getDataRange().getValues();
+    var latest = {}; // 正規化氏名 → 一次会の値
+    for (var i = 1; i < vals.length; i++) {
+      var nm = canonName_(vals[i][1]);
+      if (!nm) continue;                 // 無名（空送信）は除外
+      latest[nm] = String(vals[i][3] || '');
+    }
+
+    var a = 0, x = 0, u = 0;
+    for (var k in latest) {
+      var v = latest[k];
+      if (v.indexOf('出') !== -1)      a++;
+      else if (v.indexOf('欠') !== -1) x++;
+      else if (v.indexOf('未') !== -1) u++;
+    }
+    return json({ status: 'ok', attend: a, absent: x, undecided: u, responded: a + x + u });
+  } catch (err) {
+    return json({ status: 'error', message: err.toString() });
+  }
 }
 
 // --- 出欠フォームの保存 -------------------------------------------------
@@ -268,6 +305,13 @@ function readLedgerInputs_(sheet) {
 function normName_(s) {
   if (!s) return '';
   return String(s).replace(/[\s　]/g, '').trim();
+}
+
+// 集計の名寄せ用キー。括弧注記（旧姓◯◯）やスペース差、スラッシュ別名で
+// 表記がぶれても同一人物としてまとめるため、括弧を除きスラッシュ前だけを取る。
+// 例: 「山下陽介」「山下　陽介」「山下陽介（旧姓◯◯）」→ すべて "山下陽介"
+function canonName_(s) {
+  return normName_(String(s || '').replace(/[（(].*?[）)]/g, '').split(/[\/／]/)[0]);
 }
 
 // フォームのお名前欄から照合候補キーを生成する。

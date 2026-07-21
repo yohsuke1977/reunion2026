@@ -45,3 +45,28 @@ export async function fetchComments(): Promise<Comment[]> {
   if (data.status !== 'ok' || !Array.isArray(data.comments)) return [];
   return data.comments as Comment[];
 }
+
+export interface Counts {
+  attend: number;
+  absent: number;
+  undecided: number;
+  responded: number;
+}
+
+// 現在の出欠状況（一次会の出席/欠席/未定）を取得する。
+// フォーム生回答ベースの集計なので、台帳の照合有無に関係なく全回答が数えられる。
+export async function fetchCounts(): Promise<Counts | null> {
+  const endpoint = import.meta.env.VITE_GAS_ENDPOINT;
+  if (!endpoint) return null;
+
+  const res = await fetch(`${endpoint}?action=counts`);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const data = await res.json();
+  if (data.status !== 'ok') return null;
+  return {
+    attend:    data.attend    || 0,
+    absent:    data.absent    || 0,
+    undecided: data.undecided || 0,
+    responded: data.responded || 0,
+  };
+}
