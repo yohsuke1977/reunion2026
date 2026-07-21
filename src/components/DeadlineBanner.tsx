@@ -1,9 +1,11 @@
 // 一次締め切りを目立たせる上部バナー。締切を過ぎたら自動で非表示。
-const DEADLINE = new Date(2026, 6, 31, 23, 59, 59); // 2026/07/31（金）
+const DEADLINE = new Date(2026, 6, 31); // 2026/07/31（金）
 
 export default function DeadlineBanner() {
+  // カレンダー上の日数差で数える（7/21なら「あと10日」、7/31当日は「本日まで！」）
   const now = new Date();
-  const days = Math.ceil((DEADLINE.getTime() - now.getTime()) / 86_400_000);
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const days = Math.round((DEADLINE.getTime() - today.getTime()) / 86_400_000);
   if (days < 0) return null;
 
   return (
