@@ -7,7 +7,8 @@ var SHEET_NAME = '出欠登録';           // フォーム回答の受信シー�
 // 出欠台帳（マスター名簿）関連
 var LEDGER_NAME = 'シート1';           // 台帳シート名
 var ROSTER_ID = 'YOUR_ROSTER_ID';     // ← コピー元の学年名簿スプレッドシートIDに変更
-var LEDGER_HEADERS = ['No.', 'フリガナ', '氏名', '旧姓', '性別', '組', '出欠', '二次会', '回答日時', '経路', '備考'];
+var LEDGER_HEADERS = ['No.', 'フリガナ', '氏名', '旧姓', '性別', '組', '出欠', '二次会', '回答日時', '経路', '備考', '会費受領'];
+var ACCOUNTING_NAME = '会計';          // 会計シート名
 
 function doGet(e) {
   var p = (e && e.parameter) || {};
@@ -147,6 +148,7 @@ function onOpen() {
       .createMenu('同窓会台帳')
       .addItem('① 名簿を取り込む / 更新', 'importRoster')
       .addItem('② フォーム回答を反映', 'syncLedger')
+      .addItem('③ 会計シートを作成', 'setupAccounting')
       .addToUi();
   } catch (e) {}
 }
@@ -198,7 +200,7 @@ function importRoster() {
 
   var out = [];
   for (var k = 0; k < roster.length; k++) {
-    var keep = prev[normName_(roster[k][1])] || ['', '', '', '', ''];
+    var keep = prev[normName_(roster[k][1])] || ['', '', '', '', '', ''];
     out.push([k + 1].concat(roster[k], keep));
   }
   if (out.length) {
@@ -285,6 +287,69 @@ function syncLedger() {
   return { updates: updates, unmatched: unmatched };
 }
 
+// --- ③ 会計シートの作成 -------------------------------------------------
+// 収入（会費×受領人数を自動集計）・支出（領収書リンク付き）・残金の収支表。
+// 台帳の「会費受領」列（L列）に○を付けると収入が自動計算される＝受付チェック兼用。
+function setupAccounting() {
+  var ss = SpreadsheetApp.openById(SHEET_ID);
+
+  // 台帳にL列ヘッダーが無ければ追加（既存データはそのまま）
+  var ledger = ss.getSheetByName(LEDGER_NAME);
+  if (ledger && ledger.getRange(1, 12).getValue() !== '会費受領') {
+    ledger.getRange(1, 12).setValue('会費受領').setFontWeight('bold');
+  }
+
+  if (ss.getSheetByName(ACCOUNTING_NAME)) {
+    try { ss.toast('会計シートは既にあります（作り直す場合は先に削除してください）'); } catch (e) {}
+    return;
+  }
+  var sh = ss.insertSheet(ACCOUNTING_NAME);
+  var L = "'" + LEDGER_NAME + "'";  // 数式内のシート参照
+
+  var rows = [
+    ['魚崎中44回生同窓会 会計', '', '', '', ''],                                     // 1
+    ['', '', '', '', ''],                                                            // 2
+    ['【見込み】台帳の出席○から自動計算', '', '', '', ''],                          // 3
+    ['一次会 出席見込み', '=COUNTIF(' + L + '!G2:G1000,"○")', '名', '', ''],        // 4
+    ['会費単価（確定したら変更）', 10000, '円', '', ''],                             // 5
+    ['見込み収入', '=B4*B5', '円', '', ''],                                          // 6
+    ['', '', '', '', ''],                                                            // 7
+    ['【収入】受付で台帳L列「会費受領」に○を付けると自動集計', '', '', '', ''],     // 8
+    ['項目', '単価', '人数', '金額', ''],                                            // 9
+    ['一次会会費', '=B5', '=COUNTIF(' + L + '!L2:L1000,"○")', '=B10*C10', ''],      // 10
+    ['二次会会費（使う場合は手入力）', '', '', '', ''],                              // 11
+    ['その他収入（ご祝儀など）', '', '', '', ''],                                    // 12
+    ['収入合計', '', '', '=SUM(D10:D12)', ''],                                       // 13
+    ['', '', '', '', ''],                                                            // 14
+    ['【支出】領収書はスマホで撮影→Driveに保存してリンクを貼る', '', '', '', ''],   // 15
+    ['日付', '項目', '金額', '領収書リンク', 'メモ']                                 // 16
+  ];
+  sh.getRange(1, 1, rows.length, 5).setValues(rows);
+
+  var EXP_TOP = 17, EXP_ROWS = 20;                       // 支出入力欄 17〜36行
+  var totalRow = EXP_TOP + EXP_ROWS;                     // 37: 支出合計
+  sh.getRange(totalRow, 1).setValue('支出合計');
+  sh.getRange(totalRow, 3).setFormula('=SUM(C' + EXP_TOP + ':C' + (totalRow - 1) + ')');
+  sh.getRange(totalRow + 2, 1).setValue('残金（収入合計−支出合計）');
+  sh.getRange(totalRow + 2, 3).setFormula('=D13-C' + totalRow);
+  sh.getRange(totalRow + 3, 1).setValue('※余剰金は次回同窓会の準備金として繰り越します');
+
+  // 体裁
+  sh.getRange('A1').setFontWeight('bold').setFontSize(14);
+  ['A3', 'A8', 'A15'].forEach(function (a) { sh.getRange(a).setFontWeight('bold'); });
+  sh.getRange('A9:E9').setFontWeight('bold');
+  sh.getRange('A16:E16').setFontWeight('bold');
+  sh.getRange(totalRow, 1, 1, 5).setFontWeight('bold');
+  sh.getRange(totalRow + 2, 1, 1, 5).setFontWeight('bold');
+  ['B5', 'B6', 'B10', 'D10:D13'].forEach(function (a) { sh.getRange(a).setNumberFormat('¥#,##0'); });
+  sh.getRange(EXP_TOP, 3, EXP_ROWS + 1, 1).setNumberFormat('¥#,##0');
+  sh.getRange(totalRow + 2, 3).setNumberFormat('¥#,##0');
+  sh.setColumnWidth(1, 240).setColumnWidth(2, 110).setColumnWidth(3, 110)
+    .setColumnWidth(4, 200).setColumnWidth(5, 200);
+
+  try { ss.toast('会計シートを作成しました。台帳L列「会費受領」が受付チェック欄です。'); } catch (e) {}
+}
+
 // --- ヘルパー ----------------------------------------------------------
 function idxOf_(head, labels) {
   for (var i = 0; i < labels.length; i++) {
@@ -294,16 +359,16 @@ function idxOf_(head, labels) {
   return -1;
 }
 
-// 台帳の既存入力（氏名 → [出欠,二次会,回答日時,経路,備考]）を読み出す
+// 台帳の既存入力（氏名 → [出欠,二次会,回答日時,経路,備考,会費受領]）を読み出す
 function readLedgerInputs_(sheet) {
   var map = {};
   var last = sheet.getLastRow();
   if (last < 2) return map;
-  var vals = sheet.getRange(2, 3, last - 1, 9).getValues(); // C..K
+  var vals = sheet.getRange(2, 3, last - 1, 10).getValues(); // C..L
   for (var i = 0; i < vals.length; i++) {
     var nm = normName_(vals[i][0]); // C=氏名
     if (!nm) continue;
-    map[nm] = vals[i].slice(4);     // G..K
+    map[nm] = vals[i].slice(4);     // G..L
   }
   return map;
 }

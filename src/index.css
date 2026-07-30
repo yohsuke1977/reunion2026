@@ -463,6 +463,29 @@ section { position: relative; }
 .thanks .big { font-family: var(--display); font-weight: 900; font-size: 30px; color: var(--verm); margin-bottom: 8px; }
 .thanks p { font-size: 18px; color: var(--ink); }
 
+/* REPORT（会計報告） */
+.report { padding: 14px 24px 30px; }
+.report-box {
+  border: 2px solid var(--navy);
+  background: rgba(255, 255, 255, .35);
+  padding: 22px 20px;
+  text-align: center;
+}
+.report-main {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 20px;
+  color: var(--navy);
+  line-height: 1.8;
+  margin-bottom: 12px;
+}
+.report-sub {
+  font-family: var(--gothic);
+  font-size: 16px;
+  color: var(--sub);
+  line-height: 1.95;
+}
+
 /* SHARE */
 .share-band {
   border-top: 2px solid var(--navy);

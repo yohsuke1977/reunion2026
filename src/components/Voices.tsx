@@ -1,9 +1,6 @@
 import { useEffect, useState } from 'react';
 import { fetchComments, type Comment } from '../lib/submitForm';
-
-// コメントの一般公開スイッチ。true にすると「みんなの近況」に投稿を縦スクロール表示する。
-// 十分に集まってから公開する運用のため、当面は false（Coming Soon 表示）のまま。
-const COMMENTS_PUBLIC = false;
+import { COMMENTS_PUBLIC } from '../config';
 
 export default function Voices() {
   const [comments, setComments] = useState<Comment[] | null>(null);
