@@ -8,7 +8,7 @@ export default function AccountingNote() {
         </p>
         <p className="report-sub">
           領収書にもとづき、収入・支出をすべてご報告します。<br />
-          余剰金は、次回の同窓会の準備金として繰り越す予定です。
+          余剰金が出た場合の使いみちも、あわせてご報告します。
         </p>
       </div>
     </section>

@@ -332,7 +332,7 @@ function setupAccounting() {
   sh.getRange(totalRow, 3).setFormula('=SUM(C' + EXP_TOP + ':C' + (totalRow - 1) + ')');
   sh.getRange(totalRow + 2, 1).setValue('残金（収入合計−支出合計）');
   sh.getRange(totalRow + 2, 3).setFormula('=D13-C' + totalRow);
-  sh.getRange(totalRow + 3, 1).setValue('※余剰金は次回同窓会の準備金として繰り越します');
+  sh.getRange(totalRow + 3, 1).setValue('※余剰金の扱い: 検討中（二次会費用に充当 or 次回への繰越）→ 会計報告に明記する');
 
   // 体裁
   sh.getRange('A1').setFontWeight('bold').setFontSize(14);
