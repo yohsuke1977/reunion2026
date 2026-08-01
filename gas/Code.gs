@@ -286,7 +286,10 @@ function syncLedger() {
     for (var c = 0; c < cands.length; c++) {
       if (cands[c] in keyToRow) { row = keyToRow[cands[c]]; break; }
     }
-    if (row < 0) { unmatched.push(raw); continue; }
+    if (row < 0) {
+      if (unmatched.indexOf(raw) === -1) unmatched.push(raw); // 同一人物の再送信は1回だけ報告
+      continue;
+    }
 
     // フォームは時系列昇順なので、同一人物の再送信は後勝ち（＝最新回答）で上書き
     block[row][0] = mark_(fvals[i][3]);   // 出欠
