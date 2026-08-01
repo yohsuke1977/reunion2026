@@ -256,11 +256,13 @@ function syncLedger() {
   for (var r = 0; r < n; r++) {
     var kName = normName_(names[r][1]);                 // 現姓フルネーム
     // 旧姓フルネーム ＝ 旧姓 ＋ 氏名の「名」部分（例: 本城 洋子/旧姓松岡 → 松岡洋子）
+    // 旧姓欄の注記「雨宮（現在）」「三好（現在）」等は括弧を除いて姓だけ使う
     var kMaiden = '';
-    if (names[r][2]) {
+    var oldCol = String(names[r][2] || '').replace(/[（(].*?[）)]/g, '');
+    if (oldCol) {
       var parts = String(names[r][1]).split(/[\s　]+/).filter(String);
       var given = parts.length > 1 ? parts[parts.length - 1] : '';
-      if (given) kMaiden = normName_(names[r][2] + given);
+      if (given) kMaiden = normName_(oldCol + given);
     }
     var kKana = kanaKey_(names[r][0]);                  // フリガナ（半角カナ→全角カナ）
     // 注: 旧姓「姓のみ」は同姓の別人に誤爆しうるためキーにしない（フルネーム復元のみ）
