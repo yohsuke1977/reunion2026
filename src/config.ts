@@ -4,4 +4,4 @@
 //   - Voices: 投稿コメントの縦スクロール表示を開始
 //   - 会計報告セクション（「開催後にここで報告します」の予告）を表示
 // 投稿が十分集まってから公開する運用のため、当面は false。
-export const COMMENTS_PUBLIC = false;
+export const COMMENTS_PUBLIC = true;
