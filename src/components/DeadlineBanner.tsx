@@ -1,12 +1,24 @@
-// 一次締め切りを目立たせる上部バナー。締切を過ぎたら自動で非表示。
-const DEADLINE = new Date(2026, 6, 31); // 2026/07/31（金）
+// ページ上部バナー。一次締切まではカウントダウン、締切後は「引き続き受付中」の案内に切り替わる。
+const DEADLINE = new Date(2026, 6, 31); // 一次締切 2026/07/31（金）
 
 export default function DeadlineBanner() {
-  // カレンダー上の日数差で数える（7/21なら「あと10日」、7/31当日は「本日まで！」）
+  // カレンダー上の日数差で数える（締切当日は「本日まで！」）
   const now = new Date();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const days = Math.round((DEADLINE.getTime() - today.getTime()) / 86_400_000);
-  if (days < 0) return null;
+
+  // 一次締切後: 登録・変更は引き続き受付中
+  if (days < 0) {
+    return (
+      <a className="dlbanner open" href="#rsvp">
+        <div className="dl-row">
+          <span className="dl-tag">出欠受付中</span>
+          <span className="dl-open-msg">一次締切後も、登録・変更を受け付けています</span>
+        </div>
+        <span className="dl-cta">出欠を登録・変更する ▶</span>
+      </a>
+    );
+  }
 
   return (
     <a className="dlbanner" href="#rsvp">

@@ -76,7 +76,7 @@ function saveEntry(p) {
 
     if (!sheet) {
       sheet = ss.insertSheet(SHEET_NAME);
-      sheet.appendRow(['タイムスタンプ', 'お名前', 'クラス', '一次会', '二次会', 'コメント名', '近況', '思い出']);
+      sheet.appendRow(['タイムスタンプ', 'お名前', 'クラス', '一次会', '二次会', 'コメント名', '近況', '思い出', 'コメント掲載']);
     }
 
     sheet.appendRow([
@@ -88,10 +88,26 @@ function saveEntry(p) {
       p.commentName || '',
       p.now         || '',
       p.memory      || ''
+      // I列「コメント掲載」は空のまま＝未掲載。幹事が内容確認後に○を付けると公開される
     ]);
 
     // フォーム回答を出欠台帳（シート1）にも反映（失敗しても送信は成功扱い）
     try { syncLedger(); } catch (e) {}
+
+    // コメント付きの回答は幹事にメール通知（掲載確認を促す）。失敗しても送信は成功扱い
+    if (String(p.now || '').trim() || String(p.memory || '').trim()) {
+      try {
+        MailApp.sendEmail(
+          Session.getEffectiveUser().getEmail(),
+          '【同窓会】新しいコメントが届きました',
+          'お名前: ' + (p.name || '(無記入)') + '\n' +
+          '表示名: ' + (p.commentName || '(無記入)') + '\n\n' +
+          '近況:\n' + (p.now || '') + '\n\n' +
+          '思い出:\n' + (p.memory || '') + '\n\n' +
+          '内容を確認して、出欠登録シートのI列「コメント掲載」に ○ を付けるとサイトに掲載されます。'
+        );
+      } catch (e) {}
+    }
 
     return json({ status: 'ok' });
   } catch (err) {
@@ -100,7 +116,8 @@ function saveEntry(p) {
 }
 
 // --- コメント一覧の配信 -------------------------------------------------
-// 近況または思い出が書かれている行だけを、表示名・本文に絞って返す。
+// I列「コメント掲載」に○が付いた行だけを、表示名・本文に絞って返す。
+// 幹事が内容確認してから掲載する運用（未確認の新規コメントは出ない）。
 // お名前・クラス・出欠などの個人情報は返さない（プライバシー保護）。
 function listComments() {
   try {
@@ -115,7 +132,8 @@ function listComments() {
       var commentName = String(row[5] || '').trim();
       var now         = String(row[6] || '').trim();
       var memory      = String(row[7] || '').trim();
-      if (!now && !memory) continue;             // 近況も思い出も無ければ表示しない
+      if (!now && !memory) continue;             // 近況も思い出も無ければ対象外
+      if (!approved_(row[8])) continue;          // 掲載○が無ければ非公開（要確認）
 
       out.push({
         name:   commentName || '匿名',
@@ -129,6 +147,11 @@ function listComments() {
   } catch (err) {
     return json({ status: 'error', message: err.toString() });
   }
+}
+
+// 掲載マーク判定: ○/◯/〇（見分けにくい3種の丸すべて）と OK を許容
+function approved_(v) {
+  return /[○◯〇]|^ok$/i.test(String(v || '').trim());
 }
 
 function json(obj) {

@@ -49,8 +49,8 @@ export default function RSVPForm() {
   return (
     <section className="form-wrap">
       <div className="deadline-band">
-        <span className="deadline-label">一次締め切り</span>
-        <span className="deadline-date">7月31日（金）</span>
+        <span className="deadline-label">受付中</span>
+        <span className="deadline-note">一次締切後も、出欠の登録・変更を受け付けています</span>
       </div>
       <div className="formcard">
         <div className="fmhd">

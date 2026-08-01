@@ -31,7 +31,7 @@ export default function Voices() {
             ))}
           </div>
         </div>
-        <p className="snote">※ 上の「② コメントを投稿」からお寄せいただけます。</p>
+        <p className="snote">※ 上の「② コメントを投稿」からお寄せいただけます。<br />お寄せいただいたコメントは、確認のうえ順次ご紹介します。</p>
       </section>
     );
   }

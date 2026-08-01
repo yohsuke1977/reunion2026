@@ -89,6 +89,11 @@ section { position: relative; }
   padding: 12px 0;
   border-radius: 5px;
 }
+/* 締切後: 受付継続バナー（紺トーン） */
+.dlbanner.open { background: var(--navy); border-bottom-color: var(--navy-2); }
+.dlbanner.open .dl-tag { color: var(--navy); }
+.dlbanner.open .dl-cta { color: var(--navy); }
+.dl-open-msg { font-family: var(--gothic); font-weight: 700; font-size: 16px; line-height: 1.6; }
 
 /* ATTENDANCE COUNTS */
 .counts { padding: 10px 24px 2px; }
@@ -323,6 +328,13 @@ section { position: relative; }
   font-size: 24px;
   color: var(--verm-d);
   letter-spacing: .04em;
+}
+.deadline-note {
+  font-family: var(--gothic);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--verm-d);
+  line-height: 1.6;
 }
 
 .thanks-resend {
