@@ -381,7 +381,7 @@ function normName_(s) {
 
 // 旧字体→新字体の正規化（偶数位置=旧字体、次の文字=新字体のペア列）
 // 名簿・回答の双方に適用するので「三好將介」↔「三好将介」等が一致する
-var KYU_SHIN_ = '將将壽寿齊斉齋斎邊辺邉辺澤沢濱浜髙高﨑崎嶋島嶌島國国廣広惠恵榮栄眞真淺浅瀨瀬龍竜瀧滝豐豊圓円關関與与萬万內内德徳櫻桜靜静縣県稻稲綠緑應応澁渋鹽塩爲為';
+var KYU_SHIN_ = '將将壽寿齊斉齋斎邊辺邉辺澤沢濱浜髙高﨑崎嶋島嶌島國国廣広惠恵榮栄眞真淺浅瀨瀬龍竜瀧滝豐豊圓円關関與与萬万內内德徳櫻桜靜静縣県稻稲綠緑應応澁渋鹽塩爲為樂楽';
 function normKanji_(s) {
   var out = '';
   for (var i = 0; i < s.length; i++) {
@@ -460,6 +460,18 @@ function matchCandidates_(raw) {
     var core = normName_(base).replace(/[\/／]/g, '');
     for (var s = 1; s <= 3; s++) { if (core.length > s) add(oldSurname + core.slice(s)); }
   }
+
+  // 括弧内を旧姓とみなすパターン（「旧姓」と書かない書き方）:
+  //   三浦悠(中村) → 中村悠 ／ 辻紗知子(松浦紗知子) → 松浦紗知子（フルネームのケース）
+  var parens = raw.match(/[（(][^（()）]*[）)]/g) || [];
+  parens.forEach(function (pr) {
+    var inner = normName_(pr.replace(/[（()）]/g, '').replace(/旧姓[\s　:：\/／]*/g, ''));
+    if (!inner) return;
+    add(inner);                                              // 括弧内がフルネームのケース
+    tokens.forEach(function (t) { add(inner + normName_(t)); });
+    var core2 = normName_(base).replace(/[\/／]/g, '');
+    for (var s2 = 1; s2 <= 3; s2++) { if (core2.length > s2) add(inner + core2.slice(s2)); }
+  });
 
   // カナ回答（カガワタツヤ・おだがき あきら 等）→ 台帳フリガナとの照合キー
   var kana = kanaKey_(raw.replace(/[（(].*?[）)]/g, ''));
