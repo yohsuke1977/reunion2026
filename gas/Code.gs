@@ -309,7 +309,26 @@ function syncLedger() {
   }
   try { ss.toast(msg, '出欠台帳の更新', 12); } catch (e) {}
   Logger.log(msg);
+  writeSyncLog_(ss, updates, unmatched);
   return { updates: updates, unmatched: unmatched };
+}
+
+// 同期結果を「同期ログ」シートに書き出す（トーストは見切れるため）。毎回書き直し。
+function writeSyncLog_(ss, updates, unmatched) {
+  try {
+    var name = '同期ログ';
+    var sh = ss.getSheetByName(name) || ss.insertSheet(name, 0); // 先頭タブに配置
+    sh.clear();
+    var rows = [
+      ['最終同期', new Date()],
+      ['台帳へ反映', updates + ' 件'],
+      ['未照合（要手動確認）', unmatched.length + ' 件']
+    ];
+    unmatched.forEach(function (u, i) { rows.push(['未照合 ' + (i + 1), u]); });
+    sh.getRange(1, 1, rows.length, 2).setValues(rows);
+    sh.getRange(1, 1, 3, 1).setFontWeight('bold');
+    sh.setColumnWidth(1, 160).setColumnWidth(2, 320);
+  } catch (e) {}
 }
 
 // --- メール通知のテスト兼・権限承認用 ------------------------------------
