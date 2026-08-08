@@ -32,32 +32,54 @@ function doGet(e) {
   return saveEntry(p);
 }
 
-// --- 出欠の集計（フォーム生回答ベース）---------------------------------
-// 出欠登録シートを氏名で名寄せ（最新回答を採用）して、一次会の出席/欠席/未定を数える。
-// 台帳の照合有無に関係なく、回答した人は全員カウントされる。
+// --- 出欠の集計（台帳ベース＋未照合フォーム回答の補完）------------------
+// 台帳（シート1）のG列＝フォーム反映済み＋LINE・口コミの手入力を数え、
+// 台帳に紐付いていないフォーム回答（未照合の新規など）を補完で足す。
+// これで手入力の○も、名簿に無い人の回答も、二重計上なく全員カウントされる。
 function countRsvp() {
   try {
     var ss = SpreadsheetApp.openById(SHEET_ID);
-    var sheet = ss.getSheetByName(SHEET_NAME);
-    if (!sheet) return json({ status: 'ok', attend: 0, absent: 0, undecided: 0, responded: 0 });
-
-    // 出欠登録: タイムスタンプ, お名前, クラス, 一次会, 二次会, ...
-    // 「何度でも送信OK」なので重複回答が来る。氏名で名寄せし、後の行（新しい回答）を採用。
-    var vals = sheet.getDataRange().getValues();
-    var latest = {}; // 正規化氏名 → 一次会の値
-    for (var i = 1; i < vals.length; i++) {
-      var nm = canonName_(vals[i][1]);
-      if (!nm) continue;                 // 無名（空送信）は除外
-      latest[nm] = String(vals[i][3] || '');
-    }
-
+    var ledger = ss.getSheetByName(LEDGER_NAME);
+    var form = ss.getSheetByName(SHEET_NAME);
     var a = 0, x = 0, u = 0;
-    for (var k in latest) {
-      var v = latest[k];
-      if (v.indexOf('出') !== -1)      a++;
-      else if (v.indexOf('欠') !== -1) x++;
-      else if (v.indexOf('未') !== -1) u++;
+
+    // 台帳G列（出欠）を数える
+    var keyToRow = {};
+    if (ledger && ledger.getLastRow() >= 2) {
+      var n = ledger.getLastRow() - 1;
+      keyToRow = ledgerKeys_(ledger, n);
+      var marks = ledger.getRange(2, 7, n, 1).getValues();
+      for (var i = 0; i < n; i++) {
+        var m = String(marks[i][0] || '').trim();
+        if (!m) continue;
+        if (/[○◯〇]/.test(m) || m.indexOf('出') !== -1)      a++;
+        else if (/[✗×☓✕]/.test(m) || m.indexOf('欠') !== -1) x++;
+        else if (/[△▲]/.test(m) || m.indexOf('未') !== -1)   u++;
+      }
     }
+
+    // 台帳と照合できないフォーム回答を補完（名寄せして最新回答を採用）
+    if (form) {
+      var fvals = form.getDataRange().getValues();
+      var extra = {}; // 未照合者の canonName → 一次会の値
+      for (var j = 1; j < fvals.length; j++) {
+        var raw = String(fvals[j][1] || '').trim();
+        if (!raw) continue;
+        var cands = matchCandidates_(raw), hit = false;
+        for (var c = 0; c < cands.length; c++) {
+          if (cands[c] in keyToRow) { hit = true; break; }
+        }
+        if (hit) continue;               // 台帳側で数えた人
+        extra[canonName_(raw)] = String(fvals[j][3] || '');
+      }
+      for (var k in extra) {
+        var v = extra[k];
+        if (v.indexOf('出') !== -1)      a++;
+        else if (v.indexOf('欠') !== -1) x++;
+        else if (v.indexOf('未') !== -1) u++;
+      }
+    }
+
     return json({ status: 'ok', attend: a, absent: x, undecided: u, responded: a + x + u });
   } catch (err) {
     return json({ status: 'error', message: err.toString() });
@@ -249,27 +271,7 @@ function syncLedger() {
   var last = ledger.getLastRow();
   if (last < 2) return { updates: 0, unmatched: [] };
   var n = last - 1;
-  var names = ledger.getRange(2, 2, n, 3).getValues(); // B:D フリガナ・氏名・旧姓
-
-  // 台帳キー → 行index（0始まり）。氏名・旧姓・旧姓フルネーム・フリガナを索引。先勝ち。
-  var keyToRow = {};
-  for (var r = 0; r < n; r++) {
-    var kName = normName_(names[r][1]);                 // 現姓フルネーム
-    // 旧姓フルネーム ＝ 旧姓 ＋ 氏名の「名」部分（例: 本城 洋子/旧姓松岡 → 松岡洋子）
-    // 旧姓欄の注記「雨宮（現在）」「三好（現在）」等は括弧を除いて姓だけ使う
-    var kMaiden = '';
-    var oldCol = String(names[r][2] || '').replace(/[（(].*?[）)]/g, '');
-    if (oldCol) {
-      var parts = String(names[r][1]).split(/[\s　]+/).filter(String);
-      var given = parts.length > 1 ? parts[parts.length - 1] : '';
-      if (given) kMaiden = normName_(oldCol + given);
-    }
-    var kKana = kanaKey_(names[r][0]);                  // フリガナ（半角カナ→全角カナ）
-    // 注: 旧姓「姓のみ」は同姓の別人に誤爆しうるためキーにしない（フルネーム復元のみ）
-    [kName, kMaiden, kKana].forEach(function (k) {
-      if (k && !(k in keyToRow)) keyToRow[k] = r;
-    });
-  }
+  var keyToRow = ledgerKeys_(ledger, n);
 
   // 出欠登録: タイムスタンプ, お名前, クラス, 一次会, 二次会, コメント名, 近況, 思い出
   var block = ledger.getRange(2, 7, n, 5).getValues();  // G:K
@@ -409,6 +411,31 @@ function setupAccounting() {
 }
 
 // --- ヘルパー ----------------------------------------------------------
+
+// 台帳の照合キー → 行index（0始まり）。氏名・旧姓フルネーム・フリガナを索引。先勝ち。
+// 旧姓欄の注記「雨宮（現在）」等は括弧を除いて姓だけ使う。
+// 注: 旧姓「姓のみ」は同姓の別人に誤爆しうるためキーにしない（フルネーム復元のみ）。
+function ledgerKeys_(ledger, n) {
+  var names = ledger.getRange(2, 2, n, 3).getValues(); // B:D フリガナ・氏名・旧姓
+  var keyToRow = {};
+  for (var r = 0; r < n; r++) {
+    var kName = normName_(names[r][1]);                 // 現姓フルネーム
+    // 旧姓フルネーム ＝ 旧姓 ＋ 氏名の「名」部分（例: 本城 洋子/旧姓松岡 → 松岡洋子）
+    var kMaiden = '';
+    var oldCol = String(names[r][2] || '').replace(/[（(].*?[）)]/g, '');
+    if (oldCol) {
+      var parts = String(names[r][1]).split(/[\s　]+/).filter(String);
+      var given = parts.length > 1 ? parts[parts.length - 1] : '';
+      if (given) kMaiden = normName_(oldCol + given);
+    }
+    var kKana = kanaKey_(names[r][0]);                  // フリガナ（半角カナ→全角カナ）
+    [kName, kMaiden, kKana].forEach(function (k) {
+      if (k && !(k in keyToRow)) keyToRow[k] = r;
+    });
+  }
+  return keyToRow;
+}
+
 function idxOf_(head, labels) {
   for (var i = 0; i < labels.length; i++) {
     var idx = head.indexOf(labels[i]);
