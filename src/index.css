@@ -292,6 +292,12 @@ section { position: relative; }
 .row .k { flex: 0 0 56px; font-family: var(--gothic); font-weight: 700; font-size: 16px; color: var(--navy); padding-top: 3px; letter-spacing: .04em; }
 .row .v { flex: 1; color: var(--ink); }
 .row .v small { display: block; font-family: var(--gothic); font-size: 16px; color: var(--sub); margin-top: 2px; }
+.venue-link {
+  color: var(--verm-d);
+  font-weight: 700;
+  text-decoration: none;
+  border-bottom: 1px solid rgba(178, 58, 34, .35);
+}
 .tbd {
   display: inline-block;
   font-family: var(--gothic);

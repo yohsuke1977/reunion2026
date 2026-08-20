@@ -20,7 +20,7 @@ export default function Hero() {
       </p>
       <div className="dateband">
         <div className="dd">10.11<small> SUN</small></div>
-        <div className="tt">2026年 ／ 一次会 13:00 開宴<br />三ノ宮〜神戸エリア</div>
+        <div className="tt">2026年 ／ 一次会 13:00 開宴<br />三宮・旧居留地「ジョルオーネ」</div>
       </div>
     </section>
   );

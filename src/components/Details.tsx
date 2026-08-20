@@ -13,15 +13,23 @@ export default function Details() {
         <div className="row">
           <div className="k">会場</div>
           <div className="v">
-            三ノ宮〜神戸エリア <span className="tbd">調整中</span>
-            <small>お店が決まり次第ご連絡します</small>
+            <a className="venue-link" href="https://www.zeroforme.com/giorone/" target="_blank" rel="noopener">
+              ジョルオーネ（GIORONE）
+            </a>
+            <small>
+              神戸市中央区京町68-2 3F ／ 各線 三宮駅から徒歩7分<br />
+              旧居留地のレストラン・貸切／エレベーターあり
+            </small>
           </div>
         </div>
         <div className="row">
           <div className="k">会費</div>
           <div className="v">
-            8,000〜10,000円 あたりを予定 <span className="tbd">調整中</span>
-            <small>当日受付にてお支払い</small>
+            8,000円
+            <small>
+              着席ビュッフェ15品＋飲み放題（アルコールあり）込み<br />
+              当日、受付にてお支払いください
+            </small>
           </div>
         </div>
       </div>
@@ -30,7 +38,7 @@ export default function Details() {
         <div className="row">
           <div className="k">時間</div>
           <div className="v">
-            同日 17:00〜（予定）
+            同日 16:30〜（予定）
             <small>一次会のあと、出入り自由でゆるりと</small>
           </div>
         </div>
