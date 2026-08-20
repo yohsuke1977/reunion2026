@@ -298,6 +298,26 @@ section { position: relative; }
   text-decoration: none;
   border-bottom: 1px solid rgba(178, 58, 34, .35);
 }
+.map-btn {
+  display: inline-block;
+  margin-top: 10px;
+  font-family: var(--gothic);
+  font-weight: 700;
+  font-size: 16px;
+  letter-spacing: .04em;
+  color: var(--paper);
+  background: var(--navy);
+  text-decoration: none;
+  padding: 10px 18px;
+  border-radius: 4px;
+}
+.map-btn::before {
+  content: "▶";
+  font-size: 11px;
+  margin-right: 7px;
+  vertical-align: 1px;
+}
+.map-btn:hover { background: var(--navy-2); }
 .tbd {
   display: inline-block;
   font-family: var(--gothic);

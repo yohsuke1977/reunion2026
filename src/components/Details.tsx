@@ -18,8 +18,16 @@ export default function Details() {
             </a>
             <small>
               神戸市中央区京町68-2 3F ／ 各線 三宮駅から徒歩7分<br />
-              旧居留地のレストラン・貸切／エレベーターあり
+              旧居留地のレストランを貸切
             </small>
+            <a
+              className="map-btn"
+              href="https://www.google.com/maps/search/?api=1&query=%E3%82%B8%E3%83%A7%E3%83%AB%E3%82%AA%E3%83%BC%E3%83%8D+%E7%A5%9E%E6%88%B8%E5%B8%82%E4%B8%AD%E5%A4%AE%E5%8C%BA%E4%BA%AC%E7%94%BA68-2"
+              target="_blank"
+              rel="noopener"
+            >
+              地図・道順をひらく
+            </a>
           </div>
         </div>
         <div className="row">
