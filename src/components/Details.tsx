@@ -46,7 +46,7 @@ export default function Details() {
         <div className="row">
           <div className="k">時間</div>
           <div className="v">
-            同日 16:30〜（予定）
+            同日 17:00〜（予定）
             <small>一次会のあと、出入り自由でゆるりと</small>
           </div>
         </div>

@@ -132,6 +132,9 @@ section { position: relative; }
 .cnt-absent { border-color: rgba(92, 102, 112, .6); color: var(--sub); }
 .counts-note { font-family: var(--gothic); font-size: 16px; color: var(--sub); text-align: center; margin-top: 13px; }
 .counts-note b { color: var(--verm-d); font-size: 18px; }
+/* 集計の取得中・失敗時は枠だけ残して控えめに見せる（セクションごと消さない） */
+.counts-loading .cnt { border-color: rgba(92, 102, 112, .28); color: rgba(92, 102, 112, .45); }
+.counts-loading .counts-note { color: rgba(92, 102, 112, .7); }
 
 /* HERO */
 .hero { padding: 34px 24px 0; }
