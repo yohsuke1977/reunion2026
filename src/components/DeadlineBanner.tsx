@@ -21,7 +21,7 @@ export default function DeadlineBanner() {
             ? <span className="dl-days">あと<b>{headcountDays}</b>日</span>
             : <span className="dl-days dl-today">本日まで！</span>}
         </div>
-        <span className="dl-cta">9/11に会場へ人数を伝えます。出欠の登録・変更はこちら ▶</span>
+        <span className="dl-cta">9/11に会場へ人数の目安を伝えます。出欠の登録・変更はこちら ▶</span>
       </a>
     );
   }
