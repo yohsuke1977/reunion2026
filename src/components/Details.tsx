@@ -53,7 +53,9 @@ export default function Details() {
         <div className="row">
           <div className="k">会場</div>
           <div className="v">
-            THE ROOFTOP KOBE
+            <a className="venue-link" href="https://www.rooftop-kobe.com/" target="_blank" rel="noopener">
+              THE ROOFTOP KOBE
+            </a>
             <small>
               神戸市中央区栄町通1-2-1 MRSXビル3F ／ 一次会から徒歩5分ほど<br />
               JR・阪神 元町駅からすぐ
