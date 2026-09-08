@@ -6,8 +6,10 @@ type SegValue = '出席' | '欠席' | '未定';
 export default function RSVPForm() {
   const [name, setName] = useState('');
   const [classOf, setClassOf] = useState('');
-  const [party1, setParty1] = useState<SegValue>('出席');
-  const [party2, setParty2] = useState<SegValue>('未定');
+  // 出欠は既定値を置かない。あらかじめ選ばれていると、深く考えずに
+  // 送信した人まで「出席」として記録されてしまうため、必ず選んでもらう。
+  const [party1, setParty1] = useState<SegValue | ''>('');
+  const [party2, setParty2] = useState<SegValue | ''>('');
   const [commentName, setCommentName] = useState('');
   const [now, setNow] = useState('');
   const [memory, setMemory] = useState('');
@@ -18,6 +20,14 @@ export default function RSVPForm() {
   async function handleSubmit() {
     if (!name.trim()) {
       setError('お名前（本名）をご記入ください');
+      return;
+    }
+    if (!party1) {
+      setError('一次会の出欠をお選びください');
+      return;
+    }
+    if (!party2) {
+      setError('二次会の出欠をお選びください');
       return;
     }
     setError('');
@@ -148,7 +158,7 @@ export default function RSVPForm() {
 }
 
 interface SegProps {
-  value: SegValue;
+  value: SegValue | '';
   onChange: (v: SegValue) => void;
   options: SegValue[];
   variant: 'navy' | 'verm';
