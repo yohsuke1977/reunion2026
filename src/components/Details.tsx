@@ -53,16 +53,14 @@ export default function Details() {
         <div className="row">
           <div className="k">会場</div>
           <div className="v">
-            <a className="venue-link" href="https://www.rooftop-kobe.com/" target="_blank" rel="noopener">
-              THE ROOFTOP KOBE
-            </a>
+            KICHIRI 三宮フラワーロード
             <small>
-              神戸市中央区栄町通1-2-1 MRSXビル3F ／ 一次会から徒歩5分ほど<br />
-              JR・阪神 元町駅からすぐ
+              神戸市中央区磯上通8-1-19 カーサグランデ神戸ビル6F<br />
+              各線 三宮駅すぐ ／ 一次会の会場から徒歩15分ほど
             </small>
             <a
               className="map-btn"
-              href="https://www.google.com/maps/search/?api=1&query=THE+ROOFTOP+KOBE+%E7%A5%9E%E6%88%B8%E5%B8%82%E4%B8%AD%E5%A4%AE%E5%8C%BA%E6%A0%84%E7%94%BA%E9%80%9A1-2-1"
+              href="https://www.google.com/maps/search/?api=1&query=KICHIRI+%E4%B8%89%E5%AE%AE%E3%83%95%E3%83%A9%E3%83%AF%E3%83%BC%E3%83%AD%E3%83%BC%E3%83%89+%E7%A5%9E%E6%88%B8%E5%B8%82%E4%B8%AD%E5%A4%AE%E5%8C%BA%E7%A3%AF%E4%B8%8A%E9%80%9A8-1-19"
               target="_blank"
               rel="noopener"
             >
@@ -73,10 +71,10 @@ export default function Details() {
         <div className="row">
           <div className="k">会費</div>
           <div className="v">
-            7,000円ほどを予定
+            4,500円ほど
             <small>
-              着席ビュッフェ11品＋飲み放題（アルコールあり）込み<br />
-              参加人数により変わります。確定しだいご案内します
+              飲み放題（90分ラストオーダー）＋お料理<br />
+              当日、実際のお会計に応じて精算します
             </small>
           </div>
         </div>
