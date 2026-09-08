@@ -1,15 +1,27 @@
 import { useState } from 'react';
-import { submitForm, type FormData } from '../lib/submitForm';
+import { submitForm, loadSavedRsvp, saveRsvp, type FormData, type SavedRsvp } from '../lib/submitForm';
 
 type SegValue = '出席' | '欠席' | '未定';
 
+// 保存値は文字列なので、想定外の値が入っていたら未選択として扱う
+const asSeg = (v?: string): SegValue | '' =>
+  v === '出席' || v === '欠席' || v === '未定' ? v : '';
+
+// 「9月8日」の形にする
+function sentOn(iso: string): string {
+  const d = new Date(iso);
+  return isNaN(d.getTime()) ? '' : `${d.getMonth() + 1}月${d.getDate()}日`;
+}
+
 export default function RSVPForm() {
-  const [name, setName] = useState('');
-  const [classOf, setClassOf] = useState('');
+  // 同じ端末から送信済みなら、その内容を復元して「送信済み」と示す
+  const [saved, setSaved] = useState<SavedRsvp | null>(() => loadSavedRsvp());
+  const [name, setName] = useState(saved?.name ?? '');
+  const [classOf, setClassOf] = useState(saved?.classOf ?? '');
   // 出欠は既定値を置かない。あらかじめ選ばれていると、深く考えずに
   // 送信した人まで「出席」として記録されてしまうため、必ず選んでもらう。
-  const [party1, setParty1] = useState<SegValue | ''>('');
-  const [party2, setParty2] = useState<SegValue | ''>('');
+  const [party1, setParty1] = useState<SegValue | ''>(asSeg(saved?.party1));
+  const [party2, setParty2] = useState<SegValue | ''>(asSeg(saved?.party2));
   const [commentName, setCommentName] = useState('');
   const [now, setNow] = useState('');
   const [memory, setMemory] = useState('');
@@ -35,6 +47,7 @@ export default function RSVPForm() {
     try {
       const data: FormData = { name, classOf, party1, party2, commentName, now, memory };
       await submitForm(data);
+      setSaved(saveRsvp({ name, classOf, party1, party2 }));
       setDone(true);
     } catch {
       setError('送信に失敗しました。しばらくしてから再度お試しください。');
@@ -62,6 +75,17 @@ export default function RSVPForm() {
         <span className="deadline-label">受付中</span>
         <span className="deadline-note">一次締切後も、出欠の登録・変更を受け付けています</span>
       </div>
+      {saved && (
+        <div className="sent-note">
+          <b>{sentOn(saved.at)}に送信済みです</b>
+          <span>
+            {saved.name}
+            {saved.party1 && ` ／ 一次会：${saved.party1}`}
+            {saved.party2 && ` ／ 二次会：${saved.party2}`}
+          </span>
+          <small>内容を変える場合は、下のフォームから再送信してください</small>
+        </div>
+      )}
       <div className="formcard">
         <div className="fmhd">
           <span className="fmno">①</span>出欠の登録

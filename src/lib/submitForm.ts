@@ -82,3 +82,42 @@ export async function fetchCounts(): Promise<Counts | null> {
     } : undefined,
   };
 }
+
+// --- 前回の送信内容を端末に覚えておく ---------------------------------
+// 「送ったかどうか分からない」を防ぐのが目的。あわせて名前の表記が
+// 毎回変わるのを防げるので、台帳との照合漏れ（未照合）も起きにくくなる。
+// コメント欄は保存しない（同じ内容を二度投稿してしまうため）。
+
+const RSVP_KEY = 'uochu44.rsvp.v1';
+
+export interface SavedRsvp {
+  name: string;
+  classOf: string;
+  party1: string;
+  party2: string;
+  /** 送信日時（ISO文字列） */
+  at: string;
+}
+
+export function loadSavedRsvp(): SavedRsvp | null {
+  try {
+    const raw = localStorage.getItem(RSVP_KEY);
+    if (!raw) return null;
+    const v = JSON.parse(raw);
+    if (!v || typeof v.name !== 'string' || !v.name) return null;
+    return v as SavedRsvp;
+  } catch {
+    // プライベートモードやサイトデータ拒否の設定では読めない。従来どおりの動作に戻すだけ。
+    return null;
+  }
+}
+
+export function saveRsvp(v: Omit<SavedRsvp, 'at'>): SavedRsvp | null {
+  const rec: SavedRsvp = { ...v, at: new Date().toISOString() };
+  try {
+    localStorage.setItem(RSVP_KEY, JSON.stringify(rec));
+  } catch {
+    // 保存できなくても送信自体は成功しているので、そのまま返す
+  }
+  return rec;
+}

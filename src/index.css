@@ -95,6 +95,21 @@ section { position: relative; }
 .dlbanner.open .dl-cta { color: var(--navy); }
 .dl-open-msg { font-family: var(--gothic); font-weight: 700; font-size: 16px; line-height: 1.6; }
 
+/* 送信済みのお知らせ（同じ端末から送っていた場合だけ出る） */
+.sent-note {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  border: 1px solid var(--navy);
+  background: rgba(255, 255, 255, .55);
+  padding: 12px 16px;
+  margin-bottom: 14px;
+  font-family: var(--gothic);
+}
+.sent-note b { color: var(--navy); font-weight: 700; font-size: 15px; }
+.sent-note span { font-size: 14px; line-height: 1.6; }
+.sent-note small { font-size: 12.5px; color: var(--sub); line-height: 1.6; }
+
 /* ATTENDANCE COUNTS */
 .counts { padding: 10px 24px 2px; }
 .counts-lead {
