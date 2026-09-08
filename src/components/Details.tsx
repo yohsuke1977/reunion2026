@@ -56,7 +56,7 @@ export default function Details() {
             KICHIRI 三宮フラワーロード
             <small>
               神戸市中央区磯上通8-1-19 カーサグランデ神戸ビル6F<br />
-              各線 三宮駅すぐ ／ 一次会の会場から徒歩15分ほど
+              各線 三宮駅すぐ ／ 一次会の会場から徒歩8分ほど
             </small>
             <a
               className="map-btn"
