@@ -117,6 +117,15 @@ section { position: relative; }
   padding: 2px 9px;
   border-radius: 11px;
 }
+.counts-party { display: flex; flex-direction: column; gap: 5px; }
+.counts-party + .counts-party { margin-top: 12px; }
+.counts-label {
+  font-family: var(--gothic);
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--sub);
+  letter-spacing: .04em;
+}
 .counts-grid { display: flex; gap: 10px; }
 .cnt {
   flex: 1;

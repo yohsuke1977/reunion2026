@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
-import { fetchCounts, type Counts } from '../lib/submitForm';
+import { fetchCounts, type Counts, type PartyCounts } from '../lib/submitForm';
 
 // 現在の出欠状況を集計表示。
-// GASの応答に2秒前後かかるため、取得できるまでセクションごと消えると
+// GASの応答に2秒前後かかる間、カウンターはセクションごと描画されず
 // 「表示されていない」ように見える。枠と見出しは常に出し、中身だけを
 // プレースホルダにしておく。取得に失敗しても間隔を伸ばしながら再試行する。
 export default function AttendanceCounts() {
@@ -40,16 +40,28 @@ export default function AttendanceCounts() {
 
   const n = (v: number | undefined) => (c ? String(v) : '—');
 
+  // 一次会・二次会それぞれの3枠。ラベルは二次会が出せるときだけ添える
+  const row = (label: string | null, p?: PartyCounts) => (
+    <div className="counts-party">
+      {label && <div className="counts-label">{label}</div>}
+      <div className="counts-grid">
+        <div className="cnt cnt-attend"><b>{n(p?.attend)}</b><span>出席</span></div>
+        <div className="cnt cnt-undecided"><b>{n(p?.undecided)}</b><span>未定</span></div>
+        <div className="cnt cnt-absent"><b>{n(p?.absent)}</b><span>欠席</span></div>
+      </div>
+    </div>
+  );
+
+  const two = !!c?.party2;
+
   return (
     <section className={c ? 'counts' : 'counts counts-loading'}>
       <div className="counts-lead">
         現在の出欠状況{c && <span className="counts-live">LIVE</span>}
       </div>
-      <div className="counts-grid">
-        <div className="cnt cnt-attend"><b>{n(c?.attend)}</b><span>出席</span></div>
-        <div className="cnt cnt-undecided"><b>{n(c?.undecided)}</b><span>未定</span></div>
-        <div className="cnt cnt-absent"><b>{n(c?.absent)}</b><span>欠席</span></div>
-      </div>
+      {two
+        ? <>{row('一次会', c!)}{row('二次会', c!.party2)}</>
+        : row(null, c ?? undefined)}
       <p className="counts-note">
         {c
           ? <>これまでに <b>{c.responded}</b> 名が回答（自動集計・随時更新）</>

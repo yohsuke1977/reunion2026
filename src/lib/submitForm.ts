@@ -46,11 +46,16 @@ export async function fetchComments(): Promise<Comment[]> {
   return data.comments as Comment[];
 }
 
-export interface Counts {
+export interface PartyCounts {
   attend: number;
   absent: number;
   undecided: number;
   responded: number;
+}
+
+export interface Counts extends PartyCounts {
+  /** 二次会の集計。GAS側が未対応の場合は undefined になる */
+  party2?: PartyCounts;
 }
 
 // 現在の出欠状況（一次会の出席/欠席/未定）を取得する。
@@ -63,10 +68,17 @@ export async function fetchCounts(): Promise<Counts | null> {
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   const data = await res.json();
   if (data.status !== 'ok') return null;
+  const p2 = data.party2;
   return {
     attend:    data.attend    || 0,
     absent:    data.absent    || 0,
     undecided: data.undecided || 0,
     responded: data.responded || 0,
+    party2: p2 ? {
+      attend:    p2.attend    || 0,
+      absent:    p2.absent    || 0,
+      undecided: p2.undecided || 0,
+      responded: p2.responded || 0,
+    } : undefined,
   };
 }

@@ -33,35 +33,44 @@ function doGet(e) {
 }
 
 // --- 出欠の集計（台帳ベース＋未照合フォーム回答の補完）------------------
-// 台帳（シート1）のG列＝フォーム反映済み＋LINE・口コミの手入力を数え、
-// 台帳に紐付いていないフォーム回答（未照合の新規など）を補完で足す。
+// 台帳（シート1）のG列＝一次会、H列＝二次会を数え、台帳に紐付いていない
+// フォーム回答（未照合の新規など）を補完で足す。
 // これで手入力の○も、名簿に無い人の回答も、二重計上なく全員カウントされる。
 function countRsvp() {
   try {
     var ss = SpreadsheetApp.openById(SHEET_ID);
     var ledger = ss.getSheetByName(LEDGER_NAME);
     var form = ss.getSheetByName(SHEET_NAME);
-    var a = 0, x = 0, u = 0;
 
-    // 台帳G列（出欠）を数える
+    // 一次会・二次会をまとめて数えるカウンタ
+    var c1 = { a: 0, x: 0, u: 0 };
+    var c2 = { a: 0, x: 0, u: 0 };
+
+    // 記号（○✗△）と文字（出席/欠席/未定）のどちらでも拾う
+    function tally(c, raw) {
+      var m = String(raw || '').trim();
+      if (!m) return;
+      if (/[○◯〇]/.test(m) || m.indexOf('出') !== -1)      c.a++;
+      else if (/[✗×☓✕]/.test(m) || m.indexOf('欠') !== -1) c.x++;
+      else if (/[△▲]/.test(m) || m.indexOf('未') !== -1)   c.u++;
+    }
+
+    // 台帳 G列（一次会）・H列（二次会）を数える
     var keyToRow = {};
     if (ledger && ledger.getLastRow() >= 2) {
       var n = ledger.getLastRow() - 1;
       keyToRow = ledgerKeys_(ledger, n);
-      var marks = ledger.getRange(2, 7, n, 1).getValues();
+      var marks = ledger.getRange(2, 7, n, 2).getValues(); // G,H
       for (var i = 0; i < n; i++) {
-        var m = String(marks[i][0] || '').trim();
-        if (!m) continue;
-        if (/[○◯〇]/.test(m) || m.indexOf('出') !== -1)      a++;
-        else if (/[✗×☓✕]/.test(m) || m.indexOf('欠') !== -1) x++;
-        else if (/[△▲]/.test(m) || m.indexOf('未') !== -1)   u++;
+        tally(c1, marks[i][0]);
+        tally(c2, marks[i][1]);
       }
     }
 
     // 台帳と照合できないフォーム回答を補完（名寄せして最新回答を採用）
     if (form) {
       var fvals = form.getDataRange().getValues();
-      var extra = {}; // 未照合者の canonName → 一次会の値
+      var extra = {}; // 未照合者の canonName → [一次会, 二次会]
       for (var j = 1; j < fvals.length; j++) {
         var raw = String(fvals[j][1] || '').trim();
         if (!raw) continue;
@@ -70,17 +79,21 @@ function countRsvp() {
           if (cands[c] in keyToRow) { hit = true; break; }
         }
         if (hit) continue;               // 台帳側で数えた人
-        extra[canonName_(raw)] = String(fvals[j][3] || '');
+        extra[canonName_(raw)] = [String(fvals[j][3] || ''), String(fvals[j][4] || '')];
       }
       for (var k in extra) {
-        var v = extra[k];
-        if (v.indexOf('出') !== -1)      a++;
-        else if (v.indexOf('欠') !== -1) x++;
-        else if (v.indexOf('未') !== -1) u++;
+        tally(c1, extra[k][0]);
+        tally(c2, extra[k][1]);
       }
     }
 
-    return json({ status: 'ok', attend: a, absent: x, undecided: u, responded: a + x + u });
+    return json({
+      status: 'ok',
+      // 一次会（従来のキー。サイトの既存表示との互換のため残す）
+      attend: c1.a, absent: c1.x, undecided: c1.u, responded: c1.a + c1.x + c1.u,
+      // 二次会
+      party2: { attend: c2.a, absent: c2.x, undecided: c2.u, responded: c2.a + c2.x + c2.u }
+    });
   } catch (err) {
     return json({ status: 'error', message: err.toString() });
   }
