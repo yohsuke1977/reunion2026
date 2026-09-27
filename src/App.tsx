@@ -6,6 +6,7 @@ import Greeting from './components/Greeting';
 import SectionHeader from './components/SectionHeader';
 import Details from './components/Details';
 import AttendanceCounts from './components/AttendanceCounts';
+import MemberList from './components/MemberList';
 import RSVPForm from './components/RSVPForm';
 import Voices from './components/Voices';
 import AccountingNote from './components/AccountingNote';
@@ -26,6 +27,7 @@ export default function App() {
       <SectionHeader no="02" title="出欠のご連絡" en="RSVP" />
       <div id="rsvp">
         <AttendanceCounts />
+        <MemberList />
         <RSVPForm />
       </div>
       <SectionHeader no="03" title="みんなの近況" en="VOICES" />

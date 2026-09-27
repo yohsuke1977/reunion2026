@@ -7,7 +7,7 @@ var SHEET_NAME = '出欠登録';           // フォーム回答の受信シー�
 // 出欠台帳（マスター名簿）関連
 var LEDGER_NAME = 'シート1';           // 台帳シート名
 var ROSTER_ID = 'YOUR_ROSTER_ID';     // ← コピー元の学年名簿スプレッドシートIDに変更
-var LEDGER_HEADERS = ['No.', 'フリガナ', '氏名', '旧姓', '性別', '組', '出欠', '二次会', '回答日時', '経路', '備考', '会費受領'];
+var LEDGER_HEADERS = ['No.', 'フリガナ', '氏名', '旧姓', '性別', '組', '出欠', '二次会', '回答日時', '経路', '備考', '会費受領', '名簿掲載'];
 var ACCOUNTING_NAME = '会計';          // 会計シート名
 
 function doGet(e) {
@@ -21,6 +21,11 @@ function doGet(e) {
   // action=counts → 出欠の集計をJSONで返す（サイトの「現在の出欠状況」用）
   if (p.action === 'counts') {
     return countRsvp();
+  }
+
+  // action=members → 出席者一覧（名簿掲載に同意した出席者どうしで見せ合う）
+  if (p.action === 'members') {
+    return listMembers(p);
   }
 
   // action=sync → フォーム回答を台帳へ手動同期（結果は件数のみ返す・名前は返さない）
@@ -111,7 +116,9 @@ function saveEntry(p) {
 
     if (!sheet) {
       sheet = ss.insertSheet(SHEET_NAME);
-      sheet.appendRow(['タイムスタンプ', 'お名前', 'クラス', '一次会', '二次会', 'コメント名', '近況', '思い出', 'コメント掲載']);
+      sheet.appendRow(['タイムスタンプ', 'お名前', 'クラス', '一次会', '二次会', 'コメント名', '近況', '思い出', 'コメント掲載', '名簿掲載']);
+    } else if (sheet.getRange(1, 10).getValue() !== '名簿掲載') {
+      sheet.getRange(1, 10).setValue('名簿掲載'); // 後から足した列の見出し
     }
 
     sheet.appendRow([
@@ -122,8 +129,9 @@ function saveEntry(p) {
       p.party2      || '',
       p.commentName || '',
       p.now         || '',
-      p.memory      || ''
-      // I列「コメント掲載」は空のまま＝未掲載。幹事が内容確認後に○を付けると公開される
+      p.memory      || '',
+      '',                          // I列「コメント掲載」は空＝未掲載。幹事が内容確認後に○を付けると公開される
+      p.listOk ? '○' : ''          // J列「名簿掲載」本人が出席者一覧への掲載に同意したか
     ]);
 
     // フォーム回答を出欠台帳（シート1）にも反映（失敗しても送信は成功扱い）
@@ -145,6 +153,54 @@ function saveEntry(p) {
     }
 
     return json({ status: 'ok' });
+  } catch (err) {
+    return json({ status: 'error', message: err.toString() });
+  }
+}
+
+// --- 出席者一覧 ---------------------------------------------------------
+// 名簿掲載に同意した出席者どうしで見せ合うための一覧。
+// 依頼者本人が台帳で「一次会 出席」かつ「名簿掲載 ○」のときだけ返す。
+// 返すのは 組・氏名・旧姓・二次会参加 のみ。連絡先や回答内容は返さない。
+function listMembers(p) {
+  try {
+    var ss = SpreadsheetApp.openById(SHEET_ID);
+    var ledger = ss.getSheetByName(LEDGER_NAME);
+    var denied = json({ status: 'ok', allowed: false, members: [] });
+    if (!ledger || ledger.getLastRow() < 2) return denied;
+    var reqName = String(p.name || '').trim();
+    if (!reqName) return denied;
+
+    var n = ledger.getLastRow() - 1;
+    var vals = ledger.getRange(2, 1, n, 13).getValues(); // A..M
+    var attending = function (v) { var m = String(v || ''); return /[○◯〇]/.test(m) || m.indexOf('出') !== -1; };
+    var listed = function (v) { return /[○◯〇]/.test(String(v || '')); };
+
+    // 依頼者を台帳で特定（フォームと同じ表記ゆれ吸収で照合）
+    var keyToRow = ledgerKeys_(ledger, n);
+    var cands = matchCandidates_(reqName), me = -1;
+    for (var c = 0; c < cands.length; c++) {
+      if (cands[c] in keyToRow) { me = keyToRow[cands[c]]; break; }
+    }
+    if (me < 0 || !attending(vals[me][6]) || !listed(vals[me][12])) return denied;
+
+    var members = [];
+    for (var i = 0; i < n; i++) {
+      if (!attending(vals[i][6]) || !listed(vals[i][12])) continue;
+      // 旧姓欄の「三好（現在）」は、氏名が旧姓で現姓が別という意味の注記
+      var old = String(vals[i][3] || '').trim(), note = '';
+      if (old) {
+        var base = old.replace(/[（(]?現在[)）]?/g, '').trim();
+        note = base ? (old.indexOf('現在') !== -1 ? '現 ' + base : base) : '';
+      }
+      members.push({
+        cls: String(vals[i][5] || '').trim(),
+        name: String(vals[i][2] || '').trim(),
+        old: note,
+        party2: attending(vals[i][7])
+      });
+    }
+    return json({ status: 'ok', allowed: true, members: members });
   } catch (err) {
     return json({ status: 'error', message: err.toString() });
   }
@@ -258,7 +314,7 @@ function importRoster() {
 
   var out = [];
   for (var k = 0; k < roster.length; k++) {
-    var keep = prev[normName_(roster[k][1])] || ['', '', '', '', '', ''];
+    var keep = prev[normName_(roster[k][1])] || ['', '', '', '', '', '', ''];
     out.push([k + 1].concat(roster[k], keep));
   }
   if (out.length) {
@@ -288,6 +344,10 @@ function syncLedger() {
 
   // 出欠登録: タイムスタンプ, お名前, クラス, 一次会, 二次会, コメント名, 近況, 思い出
   var block = ledger.getRange(2, 7, n, 5).getValues();  // G:K
+  if (ledger.getRange(1, 13).getValue() !== '名簿掲載') {
+    ledger.getRange(1, 13).setValue('名簿掲載').setFontWeight('bold'); // ①未実行でも列を用意
+  }
+  var listed = ledger.getRange(2, 13, n, 1).getValues(); // M
   var fvals = form.getDataRange().getValues();
   var updates = 0;
   var unmatched = [];
@@ -317,9 +377,11 @@ function syncLedger() {
       String(fvals[i][7] || '').trim()
     ].filter(String).join(' / ');
     if (note) block[row][4] = note;       // 備考
+    listed[row][0] = /[○◯〇]/.test(String(fvals[i][9] || '')) ? '○' : ''; // 名簿掲載（最新回答で決まる）
     updates++;
   }
   ledger.getRange(2, 7, n, 5).setValues(block);
+  ledger.getRange(2, 13, n, 1).setValues(listed);
 
   var msg = 'Web回答を台帳に反映：' + updates + '件';
   if (unmatched.length) {
@@ -457,16 +519,16 @@ function idxOf_(head, labels) {
   return -1;
 }
 
-// 台帳の既存入力（氏名 → [出欠,二次会,回答日時,経路,備考,会費受領]）を読み出す
+// 台帳の既存入力（氏名 → [出欠,二次会,回答日時,経路,備考,会費受領,名簿掲載]）を読み出す
 function readLedgerInputs_(sheet) {
   var map = {};
   var last = sheet.getLastRow();
   if (last < 2) return map;
-  var vals = sheet.getRange(2, 3, last - 1, 10).getValues(); // C..L
+  var vals = sheet.getRange(2, 3, last - 1, 11).getValues(); // C..M
   for (var i = 0; i < vals.length; i++) {
     var nm = normName_(vals[i][0]); // C=氏名
     if (!nm) continue;
-    map[nm] = vals[i].slice(4);     // G..L
+    map[nm] = vals[i].slice(4);     // G..M
   }
   return map;
 }

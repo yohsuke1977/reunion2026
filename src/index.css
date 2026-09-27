@@ -110,6 +110,54 @@ section { position: relative; }
 .sent-note span { font-size: 14px; line-height: 1.6; }
 .sent-note small { font-size: 12.5px; color: var(--sub); line-height: 1.6; }
 
+/* 出席者一覧（掲載OKの出席者どうしで見せ合う） */
+.members { padding: 4px 24px 6px; }
+.members-toggle {
+  width: 100%;
+  font-family: var(--gothic);
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--navy);
+  background: rgba(255, 255, 255, .5);
+  border: 1px solid var(--navy);
+  padding: 11px 14px;
+  text-align: left;
+  cursor: pointer;
+}
+.members-toggle:focus-visible { outline: 2px solid var(--verm); outline-offset: 2px; }
+.members-count { font-weight: 400; font-size: 13px; color: var(--sub); margin-left: 4px; }
+.members-body { border: 1px solid var(--navy); border-top: none; padding: 12px 14px; background: rgba(255, 255, 255, .35); }
+.members-note { font-family: var(--gothic); font-size: 13.5px; color: var(--sub); line-height: 1.7; margin: 0; }
+.members-list { margin: 0; display: flex; flex-direction: column; gap: 10px; }
+.members-row { display: grid; grid-template-columns: 42px 1fr; gap: 8px; }
+.members-row dt { font-family: var(--gothic); font-weight: 700; font-size: 13px; color: var(--navy); padding-top: 2px; }
+.members-row dd { margin: 0; display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 15px; }
+.member { white-space: nowrap; }
+.member-old { font-size: 12.5px; color: var(--sub); }
+.member-p2 {
+  font-family: var(--gothic);
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--verm-d);
+  border: 1px solid var(--verm);
+  padding: 0 4px;
+  margin-left: 4px;
+  vertical-align: 2px;
+}
+.members-hint {
+  font-family: var(--gothic);
+  font-size: 13px;
+  color: var(--sub);
+  line-height: 1.7;
+  padding: 2px 24px 4px;
+  margin: 0;
+}
+
+/* 出席者一覧への掲載同意（フォーム内） */
+.listok { display: flex; gap: 10px; align-items: flex-start; margin: 4px 0 10px; cursor: pointer; font-family: var(--gothic); font-size: 14.5px; }
+.listok input { width: 18px; height: 18px; margin-top: 3px; flex: none; accent-color: var(--navy); }
+.listok small { display: block; font-size: 12px; color: var(--sub); line-height: 1.6; margin-top: 2px; }
+
 /* ATTENDANCE COUNTS */
 .counts { padding: 10px 24px 2px; }
 .counts-lead {

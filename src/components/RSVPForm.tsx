@@ -22,6 +22,8 @@ export default function RSVPForm() {
   // 送信した人まで「出席」として記録されてしまうため、必ず選んでもらう。
   const [party1, setParty1] = useState<SegValue | ''>(asSeg(saved?.party1));
   const [party2, setParty2] = useState<SegValue | ''>(asSeg(saved?.party2));
+  // 出席者一覧への掲載は同意制。前回チェックしていれば引き継ぐ
+  const [listOk, setListOk] = useState(saved?.listOk === '1');
   const [commentName, setCommentName] = useState('');
   const [now, setNow] = useState('');
   const [memory, setMemory] = useState('');
@@ -45,9 +47,10 @@ export default function RSVPForm() {
     setError('');
     setLoading(true);
     try {
-      const data: FormData = { name, classOf, party1, party2, commentName, now, memory };
+      const ok = listOk ? '1' : '';
+      const data: FormData = { name, classOf, party1, party2, commentName, now, memory, listOk: ok };
       await submitForm(data);
-      setSaved(saveRsvp({ name, classOf, party1, party2 }));
+      setSaved(saveRsvp({ name, classOf, party1, party2, listOk: ok }));
       setDone(true);
     } catch {
       setError('送信に失敗しました。しばらくしてから再度お試しください。');
@@ -128,6 +131,14 @@ export default function RSVPForm() {
           <label>二次会の出欠</label>
           <SegControl value={party2} onChange={setParty2} options={['出席', '欠席', '未定']} variant="verm" />
         </div>
+
+        <label className="listok">
+          <input type="checkbox" checked={listOk} onChange={e => setListOk(e.target.checked)} />
+          <span>
+            出席者一覧に名前を載せてよい
+            <small>一覧は、同じく掲載OKの出席者だけが見られます（組・お名前・旧姓のみ）</small>
+          </span>
+        </label>
 
         <p className="note">※ お名前・クラス・ご連絡先は、同窓会の運営目的のみに使用します。</p>
       </div>

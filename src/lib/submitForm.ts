@@ -6,6 +6,8 @@ export interface FormData {
   commentName: string;
   now: string;
   memory: string;
+  /** 出席者一覧への掲載に同意したか（'1' か ''） */
+  listOk: string;
 }
 
 export async function submitForm(data: FormData): Promise<void> {
@@ -22,6 +24,7 @@ export async function submitForm(data: FormData): Promise<void> {
     commentName: data.commentName,
     now:         data.now,
     memory:      data.memory,
+    listOk:      data.listOk,
   });
   await fetch(`${endpoint}?${params}`, { mode: 'no-cors' });
 }
@@ -95,9 +98,14 @@ export interface SavedRsvp {
   classOf: string;
   party1: string;
   party2: string;
+  /** 出席者一覧への掲載に同意したか（'1' か ''）。この機能より前の保存には無い */
+  listOk?: string;
   /** 送信日時（ISO文字列） */
   at: string;
 }
+
+/** 送信内容を保存したことを、同じページ内の他の部品に知らせるイベント名 */
+export const RSVP_SAVED_EVENT = 'uochu44:rsvp-saved';
 
 export function loadSavedRsvp(): SavedRsvp | null {
   try {
@@ -119,5 +127,28 @@ export function saveRsvp(v: Omit<SavedRsvp, 'at'>): SavedRsvp | null {
   } catch {
     // 保存できなくても送信自体は成功しているので、そのまま返す
   }
+  try { window.dispatchEvent(new CustomEvent(RSVP_SAVED_EVENT)); } catch { /* noop */ }
   return rec;
+}
+
+// --- 出席者一覧 --------------------------------------------------------
+// 名簿掲載に同意した出席者どうしで見せ合う。依頼者の名前を送り、
+// GAS側で「出席かつ掲載OK」の人にだけ一覧を返す（それ以外は allowed:false）。
+
+export interface Member {
+  cls: string;
+  name: string;
+  /** 旧姓（「現 ○○」の形で現姓が入ることもある） */
+  old: string;
+  party2: boolean;
+}
+
+export async function fetchMembers(name: string): Promise<{ allowed: boolean; members: Member[] }> {
+  const endpoint = import.meta.env.VITE_GAS_ENDPOINT;
+  if (!endpoint || !name) return { allowed: false, members: [] };
+  const res = await fetch(`${endpoint}?action=members&name=${encodeURIComponent(name)}`);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const data = await res.json();
+  if (data.status !== 'ok') throw new Error(data.message || 'error');
+  return { allowed: !!data.allowed, members: Array.isArray(data.members) ? data.members : [] };
 }
