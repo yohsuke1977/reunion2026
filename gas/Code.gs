@@ -28,6 +28,11 @@ function doGet(e) {
     return listMembers(p);
   }
 
+  // action=check → 入力されたお名前が台帳と照合できるか（○×だけ返す）
+  if (p.action === 'check') {
+    return checkName(p);
+  }
+
   // action=sync → フォーム回答を台帳へ手動同期（結果は件数のみ返す・名前は返さない）
   if (p.action === 'sync') {
     var r = syncLedger();
@@ -153,6 +158,28 @@ function saveEntry(p) {
     }
 
     return json({ status: 'ok' });
+  } catch (err) {
+    return json({ status: 'error', message: err.toString() });
+  }
+}
+
+// --- お名前の照合チェック --------------------------------------------------
+// フォーム送信前に、入力されたお名前が台帳と照合できるかを確かめる。
+// 名字だけ・字違いなどで照合できない回答を、本人にその場で直してもらうため。
+// 返すのは一致したかどうかだけ（照合先の氏名や組は返さない＝名簿を覗けないように）。
+function checkName(p) {
+  try {
+    var raw = String(p.name || '').trim();
+    if (!raw) return json({ status: 'ok', match: false });
+    var ss = SpreadsheetApp.openById(SHEET_ID);
+    var ledger = ss.getSheetByName(LEDGER_NAME);
+    if (!ledger || ledger.getLastRow() < 2) return json({ status: 'ok', match: false });
+    var keyToRow = ledgerKeys_(ledger, ledger.getLastRow() - 1);
+    var cands = matchCandidates_(raw);
+    for (var c = 0; c < cands.length; c++) {
+      if (cands[c] in keyToRow) return json({ status: 'ok', match: true });
+    }
+    return json({ status: 'ok', match: false });
   } catch (err) {
     return json({ status: 'error', message: err.toString() });
   }

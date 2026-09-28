@@ -152,3 +152,19 @@ export async function fetchMembers(name: string): Promise<{ allowed: boolean; me
   if (data.status !== 'ok') throw new Error(data.message || 'error');
   return { allowed: !!data.allowed, members: Array.isArray(data.members) ? data.members : [] };
 }
+
+// --- お名前の照合チェック ------------------------------------------------
+// 送信前に、入力されたお名前が名簿（台帳）と照合できるかを確かめる。
+// 返るのは一致したかどうかだけ。通信に失敗したら null（＝確認できなかった）。
+export async function checkName(name: string): Promise<boolean | null> {
+  const endpoint = import.meta.env.VITE_GAS_ENDPOINT;
+  if (!endpoint || !name.trim()) return null;
+  try {
+    const res = await fetch(`${endpoint}?action=check&name=${encodeURIComponent(name.trim())}`);
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data.status === 'ok' ? !!data.match : null;
+  } catch {
+    return null;
+  }
+}

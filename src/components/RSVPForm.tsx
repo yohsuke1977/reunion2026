@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { submitForm, loadSavedRsvp, saveRsvp, type FormData, type SavedRsvp } from '../lib/submitForm';
+import { submitForm, loadSavedRsvp, saveRsvp, checkName, type FormData, type SavedRsvp } from '../lib/submitForm';
 
 type SegValue = '出席' | '欠席' | '未定';
 
@@ -38,6 +38,20 @@ export default function RSVPForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [done, setDone] = useState(false);
+  // 名簿との照合。名字だけ・字違いの回答を、送る前に本人に気づいてもらう
+  // idle=未確認 / checking=確認中 / ok=一致 / ng=不一致 / unknown=通信できず確認できなかった
+  const [nameCheck, setNameCheck] = useState<'idle' | 'checking' | 'ok' | 'ng' | 'unknown'>('idle');
+  // 不一致のまま送る場合は1回だけ確認する（名簿に載っていない人も送れるように）
+  const [confirmNg, setConfirmNg] = useState(false);
+
+  async function runCheck(v: string): Promise<'ok' | 'ng' | 'unknown'> {
+    if (!v.trim()) return 'unknown';
+    setNameCheck('checking');
+    const r = await checkName(v);
+    const st = r === null ? 'unknown' : r ? 'ok' : 'ng';
+    setNameCheck(st);
+    return st;
+  }
 
   async function handleSubmit() {
     if (!name.trim()) {
@@ -52,8 +66,16 @@ export default function RSVPForm() {
       setError('二次会の出欠をお選びください');
       return;
     }
-    setError('');
+    // まだ照合していなければ、ここで確かめる
     setLoading(true);
+    const st = nameCheck === 'ok' || nameCheck === 'ng' ? nameCheck : await runCheck(name);
+    if (st === 'ng' && !confirmNg) {
+      setLoading(false);
+      setConfirmNg(true);
+      setError('名簿と一致しないお名前のまま送信しますか？ 名簿に載っていない方は、このまま送信してください。');
+      return;
+    }
+    setError('');
     try {
       const ok = listOk ? '1' : '';
       const data: FormData = { name, classOf, party1, party2, commentName, now, memory, listOk: ok };
@@ -111,13 +133,21 @@ export default function RSVPForm() {
         </div>
 
         <div className="fld">
-          <label>お名前（本名 / 旧姓）</label>
+          <label>お名前（フルネーム / 旧姓）</label>
           <input
             type="text"
             placeholder="例）山田 太郎（旧姓 ◯◯）"
             value={name}
-            onChange={e => setName(e.target.value)}
+            onChange={e => { setName(e.target.value); setNameCheck('idle'); setConfirmNg(false); }}
+            onBlur={e => { if (e.target.value.trim()) runCheck(e.target.value); }}
           />
+          {nameCheck === 'ok' && <p className="namecheck ok">✓ 名簿のお名前と照合できました</p>}
+          {nameCheck === 'ng' && (
+            <p className="namecheck ng">
+              ⚠ 名簿のお名前と一致しませんでした。名字だけでなくフルネームで入力してください。
+              旧姓で名簿に載っている方は「豊島 明美（戸井）」のように両方を。
+            </p>
+          )}
         </div>
 
         <div className="fld">
@@ -198,7 +228,7 @@ export default function RSVPForm() {
       {error && <p className="error-msg">{error}</p>}
 
       <button className="submit" onClick={handleSubmit} disabled={loading}>
-        {loading ? '送信中…' : '送 信 す る'}
+        {loading ? '送信中…' : confirmNg && nameCheck === 'ng' ? 'このまま送信する' : '送 信 す る'}
       </button>
       <p className="note" style={{ marginTop: '12px' }}>
         ※ 出欠の変更やコメントの追加は、何度でも再送信できます。
