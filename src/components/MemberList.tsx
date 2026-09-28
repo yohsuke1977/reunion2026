@@ -4,12 +4,26 @@ import { fetchMembers, loadSavedRsvp, RSVP_SAVED_EVENT, type Member, type SavedR
 // 出席者一覧。名簿掲載に同意した出席者どうしで見せ合う。
 // 同じ端末から「一次会 出席・掲載OK」で送信した人にだけ開くボタンを出す。
 // それ以外の人には一覧の存在自体を見せない（出席だが未同意の人には案内だけ出す）。
-// 名前は開いたときに初めて取りに行く（ページ本体に名前を載せない）。
+// 名前はページ本体に載せず、掲載OKの人の端末でだけ後から取りに行く（検索エンジンに拾われない）。
 export default function MemberList() {
   const [saved, setSaved] = useState<SavedRsvp | null>(() => loadSavedRsvp());
   const [open, setOpen] = useState(false);
   const [state, setState] = useState<'idle' | 'loading' | 'error' | 'denied' | 'ok'>('idle');
   const [members, setMembers] = useState<Member[]>([]);
+
+  const eligible = !!saved && saved.party1 === '出席' && saved.listOk === '1';
+
+  // 掲載OKの出席者だけ、開く前に一覧を取っておく（ボタンに人数を出すため）。
+  // 未同意の人・部外者の端末ではそもそも取りに行かない。
+  useEffect(() => {
+    if (!eligible || !saved) return;
+    let alive = true;
+    setState('loading');
+    fetchMembers(saved.name)
+      .then(r => { if (alive) { setMembers(r.members); setState(r.allowed ? 'ok' : 'denied'); } })
+      .catch(() => { if (alive) setState('error'); });
+    return () => { alive = false; };
+  }, [eligible, saved]);
 
   // フォームから送信されたら、保存内容を読み直す（閉じて取り直し）
   useEffect(() => {
@@ -22,17 +36,18 @@ export default function MemberList() {
 
   if (saved.listOk !== '1') {
     return (
-      <p className="members-hint">
-        フォームで「出席者一覧に名前を載せてよい」にチェックして送信すると、
-        出席予定の方の一覧が見られます。
-      </p>
+      <div className="members-hint">
+        <b>出席予定の方の一覧が見られます</b>
+        <span>下のフォームで「出席者一覧に名前を載せてよい」にチェックして送信してください。</span>
+      </div>
     );
   }
 
   const toggle = () => {
     const next = !open;
     setOpen(next);
-    if (next && state !== 'ok') {
+    // 先読みに失敗していたら、開いたときに取り直す
+    if (next && (state === 'error' || state === 'idle')) {
       setState('loading');
       fetchMembers(saved.name)
         .then(r => { setMembers(r.members); setState(r.allowed ? 'ok' : 'denied'); })
@@ -42,9 +57,12 @@ export default function MemberList() {
 
   return (
     <section className="members">
-      <button className="members-toggle" onClick={toggle} aria-expanded={open}>
-        {open ? '▲' : '▼'} 出席予定の方を見る
-        {state === 'ok' && <span className="members-count">（掲載OKの方 {members.length}名）</span>}
+      <button className={`members-toggle${open ? ' on' : ''}`} onClick={toggle} aria-expanded={open}>
+        <span className="members-title">出席予定の方を見る</span>
+        <span className="members-meta">
+          {state === 'ok' && <span className="members-count">{members.length}名</span>}
+          <span className="members-chev" aria-hidden="true">{open ? '▲' : '▼'}</span>
+        </span>
       </button>
       {open && (
         <div className="members-body">
@@ -84,7 +102,8 @@ function Groups({ members }: { members: Member[] }) {
           <dd>
             {byCls.get(k)!.map((m, i) => (
               <span className="member" key={i}>
-                {m.name}
+                {/* 名前の中の全角スペースは詰める（名前どうしの間と区別がつかなくなるため） */}
+                {m.name.replace(/[\s\u3000]+/g, ' ')}
                 {m.old && <span className="member-old">（{m.old}）</span>}
                 {m.party2 && <span className="member-p2">二次会も</span>}
               </span>
