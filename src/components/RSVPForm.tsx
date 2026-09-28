@@ -13,7 +13,15 @@ function sentOn(iso: string): string {
   return isNaN(d.getTime()) ? '' : `${d.getMonth() + 1}月${d.getDate()}日`;
 }
 
+// 最終締切（10/3）を過ぎたら帯の表示を切り替える（フォーム自体は開けておく）
+function isClosed(): boolean {
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  return today.getTime() > new Date(2026, 9, 3).getTime();
+}
+
 export default function RSVPForm() {
+  const closed = isClosed();
   // 同じ端末から送信済みなら、その内容を復元して「送信済み」と示す
   const [saved, setSaved] = useState<SavedRsvp | null>(() => loadSavedRsvp());
   const [name, setName] = useState(saved?.name ?? '');
@@ -74,10 +82,17 @@ export default function RSVPForm() {
 
   return (
     <section className="form-wrap">
-      <div className="deadline-band">
-        <span className="deadline-label">受付中</span>
-        <span className="deadline-note">一次締切後も、出欠の登録・変更を受け付けています</span>
-      </div>
+      {closed ? (
+        <div className="deadline-band">
+          <span className="deadline-label">受付終了</span>
+          <span className="deadline-note">10/3で締め切りました。変更は幹事（LINE）へご連絡ください</span>
+        </div>
+      ) : (
+        <div className="deadline-band">
+          <span className="deadline-label">受付中</span>
+          <span className="deadline-note">最終締切 10/3（土）まで、出欠の登録・変更を受け付けています</span>
+        </div>
+      )}
       {saved && (
         <div className="sent-note">
           <b>{sentOn(saved.at)}に送信済みです</b>
