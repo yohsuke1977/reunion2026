@@ -47,7 +47,7 @@ export default function Details() {
           <div className="k">時間</div>
           <div className="v">
             同日 17:00〜19:00
-            <small>一次会のあと、出入り自由でゆるりと</small>
+            <small>一次会のあと、みんなで歩いて移動します。人数分の席とお料理を用意するので、参加は出欠フォームでお知らせください</small>
           </div>
         </div>
         <div className="row">
