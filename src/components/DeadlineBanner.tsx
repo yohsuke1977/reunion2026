@@ -3,7 +3,6 @@
 const DEADLINE = new Date(2026, 6, 31); // 一次締切 2026/07/31（金）
 const HEADCOUNT = new Date(2026, 8, 10); // 会場へ人数の目安を伝える前日 2026/09/10（木）
 const FINAL = new Date(2026, 9, 3);      // 最終締切 2026/10/03（土）。会場への最終報告（10/4）の前日
-const LINE_URL = 'https://lin.ee/s4AsFK2';
 
 export default function DeadlineBanner() {
   // カレンダー上の日数差で数える（締切当日は「本日まで！」）
@@ -45,15 +44,15 @@ export default function DeadlineBanner() {
     );
   }
 
-  // 10/4以降: 締切済み。変更は幹事へ直接
+  // 10/4以降: 締切済み。変更はフォームから（送信があると幹事にメールが届く）
   if (days < 0 && finalDays < 0) {
     return (
-      <a className="dlbanner open" href={LINE_URL} target="_blank" rel="noopener noreferrer">
+      <a className="dlbanner open" href="#rsvp">
         <div className="dl-row">
-          <span className="dl-tag">受付終了</span>
+          <span className="dl-tag">締切済み</span>
           <span className="dl-open-msg">出欠の受付は10/3で締め切りました</span>
         </div>
-        <span className="dl-cta">変更がある方は幹事（LINE）へ ▶</span>
+        <span className="dl-cta">変更がある方はフォームから（幹事に届きます）▶</span>
       </a>
     );
   }

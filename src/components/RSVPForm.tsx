@@ -106,8 +106,8 @@ export default function RSVPForm() {
     <section className="form-wrap">
       {closed ? (
         <div className="deadline-band">
-          <span className="deadline-label">受付終了</span>
-          <span className="deadline-note">10/3で締め切りました。変更は幹事（LINE）へご連絡ください</span>
+          <span className="deadline-label">締切済み</span>
+          <span className="deadline-note">10/3で締め切りました。変更がある方は、このフォームから送ってください（幹事に届きます）</span>
         </div>
       ) : (
         <div className="deadline-band">

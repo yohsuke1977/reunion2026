@@ -9,6 +9,7 @@ var LEDGER_NAME = 'シート1';           // 台帳シート名
 var ROSTER_ID = 'YOUR_ROSTER_ID';     // ← コピー元の学年名簿スプレッドシートIDに変更
 var LEDGER_HEADERS = ['No.', 'フリガナ', '氏名', '旧姓', '性別', '組', '出欠', '二次会', '回答日時', '経路', '備考', '会費受領', '名簿掲載'];
 var ACCOUNTING_NAME = '会計';          // 会計シート名
+var FINAL_DEADLINE = '2026-10-03';     // 出欠の最終締切。これより後の送信は幹事に通知する
 
 function doGet(e) {
   var p = (e && e.parameter) || {};
@@ -140,7 +141,16 @@ function saveEntry(p) {
     ]);
 
     // フォーム回答を出欠台帳（シート1）にも反映（失敗しても送信は成功扱い）
+    // 締切後の送信なら、変更前の台帳の値を先に控えておく（通知メールで変更点を示すため）
+    var afterDeadline = Utilities.formatDate(new Date(), 'Asia/Tokyo', 'yyyy-MM-dd') > FINAL_DEADLINE;
+    var before = afterDeadline ? ledgerMarksFor_(ss, p.name) : null;
+
     try { syncLedger(); } catch (e) {}
+
+    // 締切後の変更は会場への微調整が要るので、幹事にメールで知らせる。失敗しても送信は成功扱い
+    if (afterDeadline && String(p.name || '').trim()) {
+      try { notifyLateChange_(p, before); } catch (e) {}
+    }
 
     // コメント付きの回答は幹事にメール通知（掲載確認を促す）。失敗しても送信は成功扱い
     if (String(p.now || '').trim() || String(p.memory || '').trim()) {
@@ -161,6 +171,56 @@ function saveEntry(p) {
   } catch (err) {
     return json({ status: 'error', message: err.toString() });
   }
+}
+
+// --- 締切後の変更通知 ----------------------------------------------------
+// 台帳で本人の行を探し、現在の 一次会・二次会 の記号を返す（見つからなければ null）
+function ledgerMarksFor_(ss, name) {
+  var ledger = ss.getSheetByName(LEDGER_NAME);
+  if (!ledger || ledger.getLastRow() < 2) return null;
+  var n = ledger.getLastRow() - 1;
+  var keyToRow = ledgerKeys_(ledger, n);
+  var cands = matchCandidates_(String(name || '').trim());
+  for (var c = 0; c < cands.length; c++) {
+    if (cands[c] in keyToRow) {
+      var r = keyToRow[cands[c]];
+      var v = ledger.getRange(r + 2, 7, 1, 2).getValues()[0]; // G,H
+      return { p1: String(v[0] || ''), p2: String(v[1] || '') };
+    }
+  }
+  return null;
+}
+
+function notifyLateChange_(p, before) {
+  var label = function (v) {
+    var m = String(v || '');
+    if (/[○◯〇]/.test(m) || m.indexOf('出') !== -1) return '出席';
+    if (/[✗×☓✕]/.test(m) || m.indexOf('欠') !== -1) return '欠席';
+    if (/[△▲]/.test(m) || m.indexOf('未') !== -1) return '未定';
+    return '（未回答）';
+  };
+  var p1 = label(p.party1), p2 = label(p.party2);
+  var line = function (title, prev, next) {
+    if (!before) return title + '：' + next;
+    var b = label(prev);
+    return title + '：' + (b === next ? next + '（変更なし）' : b + ' → ' + next);
+  };
+  var body = [
+    '締切（10/3）後に出欠の送信がありました。',
+    '会場への人数の微調整が必要か確認してください。',
+    '（ジョルオーネ：1〜2名の微調整は前日まで／KICHIRI：前日まで）',
+    '',
+    'お名前：' + (p.name || ''),
+    'クラス：' + (p.classOf || '（未記入）'),
+    line('一次会', before && before.p1, p1),
+    line('二次会', before && before.p2, p2),
+    before ? '' : '※台帳と照合できなかった回答です（名簿にない方か、表記ゆれ）。出欠登録シートを確認してください。'
+  ].join('\n');
+  MailApp.sendEmail(
+    Session.getEffectiveUser().getEmail(),
+    '【同窓会・締切後の変更】' + (p.name || '') + '　一次会:' + p1 + '／二次会:' + p2,
+    body
+  );
 }
 
 // --- お名前の照合チェック --------------------------------------------------
