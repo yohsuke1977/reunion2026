@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { fetchComments, type Comment } from '../lib/submitForm';
-import { COMMENTS_PUBLIC } from '../config';
+import { COMMENTS_PUBLIC, EVENT_DONE } from '../config';
 
 export default function Voices() {
   const [comments, setComments] = useState<Comment[] | null>(null);
@@ -31,7 +31,9 @@ export default function Voices() {
             ))}
           </div>
         </div>
-        <p className="snote">※ 上の「② コメントを投稿」からお寄せいただけます。<br />お寄せいただいたコメントは、確認のうえ順次ご紹介します。</p>
+        {EVENT_DONE
+          ? <p className="snote">※ お寄せいただいた近況・思い出です。ありがとうございました。</p>
+          : <p className="snote">※ 上の「② コメントを投稿」からお寄せいただけます。<br />お寄せいただいたコメントは、確認のうえ順次ご紹介します。</p>}
       </section>
     );
   }

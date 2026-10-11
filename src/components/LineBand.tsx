@@ -1,8 +1,12 @@
+import { EVENT_DONE } from '../config';
+
 export default function LineBand() {
   return (
     <section className="line-band">
-      <div className="lh">最新情報は LINE でも</div>
-      <p>会場・会費の確定や当日のご案内は、<br />LINE公式アカウントでも順次お知らせします。</p>
+      <div className="lh">{EVENT_DONE ? '次回のお知らせも LINE で' : '最新情報は LINE でも'}</div>
+      {EVENT_DONE
+        ? <p>次の同窓会のご案内も、<br />LINE公式アカウントでお知らせします。</p>
+        : <p>会場・会費の確定や当日のご案内は、<br />LINE公式アカウントでも順次お知らせします。</p>}
       <div style={{ marginTop: '16px' }}>
         <a className="lbtn" href="https://lin.ee/s4AsFK2" target="_blank" rel="noopener noreferrer">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="#fff">

@@ -1,8 +1,10 @@
 // 会計報告。2026年10月11日の開催後に、予告から実際の収支に置き換えた。
 // 二次会は当日のお会計を参加者で精算したため、明細は載せない（幹事の判断）。
+import { ATTENDED } from '../config';
+
 const yen = (v: number) => `${v.toLocaleString('ja-JP')}円`;
 
-const ATTEND = 29;
+const ATTEND = ATTENDED;
 const FEE = 8000;
 const VENUE = 7700;
 const INCOME = FEE * ATTEND;

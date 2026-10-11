@@ -1,10 +1,25 @@
 // ページ上部バナー。一次締切まではカウントダウン、そのあとは会場への人数連絡までの
 // カウントダウンに切り替わり、それも過ぎたら「引き続き受付中」の案内になる。
+import { EVENT_DONE, ATTENDED } from '../config';
+
 const DEADLINE = new Date(2026, 6, 31); // 一次締切 2026/07/31（金）
 const HEADCOUNT = new Date(2026, 8, 10); // 会場へ人数の目安を伝える前日 2026/09/10（木）
 const FINAL = new Date(2026, 9, 3);      // 最終締切 2026/10/03（土）。会場への最終報告（10/4）の前日
 
 export default function DeadlineBanner() {
+  // 開催後: お礼と会計報告への案内
+  if (EVENT_DONE) {
+    return (
+      <a className="dlbanner open" href="#report">
+        <div className="dl-row">
+          <span className="dl-tag">開催しました</span>
+          <span className="dl-open-msg">10月11日、{ATTENDED}名で無事に開催しました</span>
+        </div>
+        <span className="dl-cta">ご参加ありがとうございました。会計報告はこちら ▶</span>
+      </a>
+    );
+  }
+
   // カレンダー上の日数差で数える（締切当日は「本日まで！」）
   const now = new Date();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());

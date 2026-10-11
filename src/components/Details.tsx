@@ -1,3 +1,5 @@
+import { EVENT_DONE } from '../config';
+
 export default function Details() {
   return (
     <section className="details">
@@ -36,7 +38,7 @@ export default function Details() {
             8,000円
             <small>
               着席ビュッフェ15品＋飲み放題（アルコールあり）込み<br />
-              当日、受付にてお支払いください
+              {EVENT_DONE ? '当日、受付にてお支払いいただきました' : '当日、受付にてお支払いください'}
             </small>
           </div>
         </div>
@@ -47,7 +49,7 @@ export default function Details() {
           <div className="k">時間</div>
           <div className="v">
             同日 17:00〜19:00
-            <small>一次会のあと、みんなで歩いて移動します。人数分の席とお料理を用意するので、参加は出欠フォームでお知らせください</small>
+            <small>{EVENT_DONE ? '一次会のあと、みんなで歩いて移動しました' : '一次会のあと、みんなで歩いて移動します。人数分の席とお料理を用意するので、参加は出欠フォームでお知らせください'}</small>
           </div>
         </div>
         <div className="row">
