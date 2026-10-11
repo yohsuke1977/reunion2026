@@ -35,3 +35,6 @@ dist-ssr
 # clasp（GASデプロイ用・ローカル専用）
 .clasp.json
 gas/.build/
+
+# 当日の印刷物（参加者の名前が入るので共有しない）
+当日印刷/
